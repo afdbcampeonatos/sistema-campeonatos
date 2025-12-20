@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { TeamDetailsModal } from './TeamDetailsModal';
-import { LoadingSpinner } from './LoadingSpinner';
-import { FaTrophy, FaUsers, FaArrowLeft } from 'react-icons/fa';
-import Link from 'next/link';
-import { updateTeamStatus } from '@/app/actions/teams';
-import { useToast } from '@/contexts/ToastContext';
+import { updateTeamStatus } from "@/app/actions/teams";
+import { useToast } from "@/contexts/ToastContext";
+import { useState } from "react";
+import { FaArrowLeft, FaTrophy, FaUsers } from "react-icons/fa";
+import { ImageWithLoading } from "./ImageWithLoading";
+import { LoadingSpinner } from "./LoadingSpinner";
+import { TeamDetailsModal } from "./TeamDetailsModal";
 
 interface Player {
   id: string;
@@ -46,15 +46,15 @@ interface ChampionshipDetailsClientProps {
 }
 
 const statusColors: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  APPROVED: 'bg-green-100 text-green-800',
-  REJECTED: 'bg-red-100 text-red-800',
+  PENDING: "bg-yellow-100 text-yellow-800",
+  APPROVED: "bg-green-100 text-green-800",
+  REJECTED: "bg-red-100 text-red-800",
 };
 
 const statusLabels: Record<string, string> = {
-  PENDING: 'Pendente',
-  APPROVED: 'Aprovado',
-  REJECTED: 'Rejeitado',
+  PENDING: "Pendente",
+  APPROVED: "Aprovado",
+  REJECTED: "Rejeitado",
 };
 
 export const ChampionshipDetailsClient = ({
@@ -66,18 +66,22 @@ export const ChampionshipDetailsClient = ({
   const [updatingTeamId, setUpdatingTeamId] = useState<string | null>(null);
 
   const formatDate = (date: Date | null) => {
-    if (!date) return 'Não definida';
-    return new Date(date).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    if (!date) return "Não definida";
+    return new Date(date).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const handleStatusChange = async (teamId: string, newStatus: string) => {
-    if (!confirm(`Tem certeza que deseja alterar o status para "${statusLabels[newStatus]}"?`)) {
+    if (
+      !confirm(
+        `Tem certeza que deseja alterar o status para "${statusLabels[newStatus]}"?`
+      )
+    ) {
       return;
     }
 
@@ -86,10 +90,12 @@ export const ChampionshipDetailsClient = ({
     setUpdatingTeamId(null);
 
     if (result.success) {
-      toast.success(`Status do time atualizado para "${statusLabels[newStatus]}"`);
+      toast.success(
+        `Status do time atualizado para "${statusLabels[newStatus]}"`
+      );
       window.location.reload();
     } else {
-      toast.error(result.error || 'Erro ao atualizar status');
+      toast.error(result.error || "Erro ao atualizar status");
     }
   };
 
@@ -114,7 +120,9 @@ export const ChampionshipDetailsClient = ({
               <FaTrophy className="text-blue-900 text-2xl" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{championship.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {championship.name}
+              </h1>
               <p className="text-gray-600">{championship.category}</p>
             </div>
           </div>
@@ -122,26 +130,41 @@ export const ChampionshipDetailsClient = ({
 
         {/* Informações do Campeonato */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Informações do Campeonato</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Informações do Campeonato
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-gray-500 mb-1">Status</p>
-              <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                championship.status === 'OPEN' ? 'bg-green-100 text-green-800' :
-                championship.status === 'CLOSED' ? 'bg-gray-100 text-gray-800' :
-                'bg-blue-100 text-blue-800'
-              }`}>
-                {championship.status === 'OPEN' ? 'Aberto' :
-                 championship.status === 'CLOSED' ? 'Encerrado' : 'Rascunho'}
+              <span
+                className={`px-3 py-1 text-sm font-semibold rounded-full ${
+                  championship.status === "OPEN"
+                    ? "bg-green-100 text-green-800"
+                    : championship.status === "CLOSED"
+                    ? "bg-gray-100 text-gray-800"
+                    : "bg-blue-100 text-blue-800"
+                }`}
+              >
+                {championship.status === "OPEN"
+                  ? "Aberto"
+                  : championship.status === "CLOSED"
+                  ? "Encerrado"
+                  : "Rascunho"}
               </span>
             </div>
             <div>
-              <p className="text-sm text-gray-500 mb-1">Início das Inscrições</p>
-              <p className="text-sm font-medium text-gray-900">{formatDate(championship.registrationStart)}</p>
+              <p className="text-sm text-gray-500 mb-1">
+                Início das Inscrições
+              </p>
+              <p className="text-sm font-medium text-gray-900">
+                {formatDate(championship.registrationStart)}
+              </p>
             </div>
             <div>
               <p className="text-sm text-gray-500 mb-1">Fim das Inscrições</p>
-              <p className="text-sm font-medium text-gray-900">{formatDate(championship.registrationEnd)}</p>
+              <p className="text-sm font-medium text-gray-900">
+                {formatDate(championship.registrationEnd)}
+              </p>
             </div>
           </div>
         </div>
@@ -189,45 +212,61 @@ export const ChampionshipDetailsClient = ({
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {championship.teams.map((team) => (
-                    <tr key={team.id} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={team.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          {team.shieldUrl ? (
-                            <img
-                              src={team.shieldUrl}
-                              alt={`Escudo do ${team.name}`}
-                              className="w-10 h-10 object-cover rounded"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
-                              <FaUsers className="text-gray-400" />
-                            </div>
-                          )}
+                          <ImageWithLoading
+                            src={team.shieldUrl}
+                            alt={`Escudo do ${team.name}`}
+                            className="w-10 h-10 object-cover rounded"
+                            fallbackIcon={<FaUsers className="text-gray-400" />}
+                            size="sm"
+                          />
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{team.name}</p>
-                            <p className="text-xs text-gray-500">{team.category}</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {team.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {team.category}
+                            </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <p className="text-sm text-gray-900">{team.responsibleName}</p>
-                        <p className="text-xs text-gray-500">CPF: {team.responsibleCpf}</p>
+                        <p className="text-sm text-gray-900">
+                          {team.responsibleName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          CPF: {team.responsibleCpf}
+                        </p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <p className="text-sm text-gray-900">{team.phone}</p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <p className="text-sm text-gray-900">{team.players.length} jogador(es)</p>
+                        <p className="text-sm text-gray-900">
+                          {team.players.length} jogador(es)
+                        </p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <select
                             value={team.status}
-                            onChange={(e) => handleStatusChange(team.id, e.target.value)}
+                            onChange={(e) =>
+                              handleStatusChange(team.id, e.target.value)
+                            }
                             disabled={updatingTeamId === team.id}
                             className={`text-xs font-semibold rounded-full px-3 py-1 border-0 cursor-pointer ${
-                              statusColors[team.status] || 'bg-gray-100 text-gray-800'
-                            } ${updatingTeamId === team.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              statusColors[team.status] ||
+                              "bg-gray-100 text-gray-800"
+                            } ${
+                              updatingTeamId === team.id
+                                ? "opacity-50 cursor-not-allowed"
+                                : ""
+                            }`}
                           >
                             <option value="PENDING">Pendente</option>
                             <option value="APPROVED">Aprovado</option>
@@ -266,4 +305,3 @@ export const ChampionshipDetailsClient = ({
     </>
   );
 };
-

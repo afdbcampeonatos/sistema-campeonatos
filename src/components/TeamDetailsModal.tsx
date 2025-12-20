@@ -1,6 +1,14 @@
-'use client';
+"use client";
 
-import { FaTimes, FaUser, FaIdCard, FaPhone, FaUsers, FaImage } from 'react-icons/fa';
+import {
+  FaIdCard,
+  FaImage,
+  FaPhone,
+  FaTimes,
+  FaUser,
+  FaUsers,
+} from "react-icons/fa";
+import { ImageWithLoading } from "./ImageWithLoading";
 
 interface Player {
   id: string;
@@ -28,46 +36,50 @@ interface TeamDetailsModalProps {
   onClose: () => void;
 }
 
-export const TeamDetailsModal = ({ team, isOpen, onClose }: TeamDetailsModalProps) => {
+export const TeamDetailsModal = ({
+  team,
+  isOpen,
+  onClose,
+}: TeamDetailsModalProps) => {
   if (!isOpen) return null;
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Date(date).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const formatCPF = (cpf: string) => {
-    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
   };
 
   const formatPhone = (phone: string) => {
     // Remove tudo que não é número primeiro
-    const numbers = phone.replace(/\D/g, '');
-    
+    const numbers = phone.replace(/\D/g, "");
+
     // Formata baseado no tamanho
     if (numbers.length === 10) {
-      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
     } else if (numbers.length === 11) {
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
     }
     return phone; // Retorna original se não tiver formato esperado
   };
 
   const statusColors: Record<string, string> = {
-    PENDING: 'bg-yellow-100 text-yellow-800',
-    APPROVED: 'bg-green-100 text-green-800',
-    REJECTED: 'bg-red-100 text-red-800',
+    PENDING: "bg-yellow-100 text-yellow-800",
+    APPROVED: "bg-green-100 text-green-800",
+    REJECTED: "bg-red-100 text-red-800",
   };
 
   const statusLabels: Record<string, string> = {
-    PENDING: 'Pendente',
-    APPROVED: 'Aprovado',
-    REJECTED: 'Rejeitado',
+    PENDING: "Pendente",
+    APPROVED: "Aprovado",
+    REJECTED: "Rejeitado",
   };
 
   return (
@@ -82,17 +94,13 @@ export const TeamDetailsModal = ({ team, isOpen, onClose }: TeamDetailsModalProp
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {team.shieldUrl ? (
-              <img
-                src={team.shieldUrl}
-                alt={`Escudo do ${team.name}`}
-                className="w-16 h-16 object-cover rounded"
-              />
-            ) : (
-              <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
-                <FaUsers className="text-gray-400 text-2xl" />
-              </div>
-            )}
+            <ImageWithLoading
+              src={team.shieldUrl}
+              alt={`Escudo do ${team.name}`}
+              className="w-16 h-16 object-cover rounded"
+              fallbackIcon={<FaUsers className="text-gray-400 text-2xl" />}
+              size="md"
+            />
             <div>
               <h2 className="text-2xl font-bold text-gray-900">{team.name}</h2>
               <p className="text-gray-600">{team.category}</p>
@@ -110,9 +118,11 @@ export const TeamDetailsModal = ({ team, isOpen, onClose }: TeamDetailsModalProp
         <div className="flex-1 overflow-y-auto p-6">
           {/* Status */}
           <div className="mb-6">
-            <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-              statusColors[team.status] || 'bg-gray-100 text-gray-800'
-            }`}>
+            <span
+              className={`px-3 py-1 text-sm font-semibold rounded-full ${
+                statusColors[team.status] || "bg-gray-100 text-gray-800"
+              }`}
+            >
               Status: {statusLabels[team.status] || team.status}
             </span>
           </div>
@@ -126,23 +136,31 @@ export const TeamDetailsModal = ({ team, isOpen, onClose }: TeamDetailsModalProp
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500 mb-1">Nome Completo</p>
-                <p className="text-sm font-medium text-gray-900">{team.responsibleName}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {team.responsibleName}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
                   <FaIdCard /> CPF
                 </p>
-                <p className="text-sm font-medium text-gray-900">{formatCPF(team.responsibleCpf)}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {formatCPF(team.responsibleCpf)}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
                   <FaPhone /> Contato
                 </p>
-                <p className="text-sm font-medium text-gray-900">{formatPhone(team.phone)}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {formatPhone(team.phone)}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Data de Inscrição</p>
-                <p className="text-sm font-medium text-gray-900">{formatDate(team.createdAt)}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {formatDate(team.createdAt)}
+                </p>
               </div>
             </div>
           </div>
@@ -155,7 +173,9 @@ export const TeamDetailsModal = ({ team, isOpen, onClose }: TeamDetailsModalProp
             </h3>
 
             {team.players.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">Nenhum jogador cadastrado</p>
+              <p className="text-gray-500 text-center py-8">
+                Nenhum jogador cadastrado
+              </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -174,22 +194,23 @@ export const TeamDetailsModal = ({ team, isOpen, onClose }: TeamDetailsModalProp
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {team.players.map((player) => (
-                      <tr key={player.id} className="hover:bg-gray-50 transition-colors">
+                      <tr
+                        key={player.id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
                         <td className="px-4 py-4 whitespace-nowrap">
-                          {player.photoUrl ? (
-                            <img
-                              src={player.photoUrl}
-                              alt={player.name}
-                              className="w-16 h-16 object-cover rounded"
-                            />
-                          ) : (
-                            <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
-                              <FaImage className="text-gray-400" />
-                            </div>
-                          )}
+                          <ImageWithLoading
+                            src={player.photoUrl}
+                            alt={player.name}
+                            className="w-16 h-16 object-cover rounded"
+                            fallbackIcon={<FaImage className="text-gray-400" />}
+                            size="md"
+                          />
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <p className="text-sm font-medium text-gray-900">{player.name}</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {player.name}
+                          </p>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
                           <p className="text-sm text-gray-900">{player.rg}</p>
@@ -216,4 +237,3 @@ export const TeamDetailsModal = ({ team, isOpen, onClose }: TeamDetailsModalProp
     </div>
   );
 };
-

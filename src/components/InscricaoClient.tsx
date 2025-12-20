@@ -322,21 +322,15 @@ export const InscricaoClient = ({
             type: photoFile instanceof File ? "File" : typeof photoFile,
           });
 
-          // Tentar adicionar arquivo mesmo se não for File (pode ser Blob)
+          // Tentar adicionar arquivo (File já é um Blob, então podemos usar diretamente)
           if (photoFile) {
             try {
-              if (photoFile instanceof File || photoFile instanceof Blob) {
-                playersFormData.append(`photo_${index}`, photoFile);
-                filesAddedCount++;
-                console.log(
-                  `[Client] Arquivo adicionado ao FormData para ${player.name}`
-                );
-              } else {
-                console.warn(
-                  `[Client] Arquivo não é File nem Blob:`,
-                  typeof photoFile
-                );
-              }
+              // File extends Blob, então podemos usar diretamente
+              playersFormData.append(`photo_${index}`, photoFile);
+              filesAddedCount++;
+              console.log(
+                `[Client] Arquivo adicionado ao FormData para ${player.name}`
+              );
             } catch (error) {
               console.error(
                 `[Client] Erro ao adicionar arquivo ao FormData:`,
