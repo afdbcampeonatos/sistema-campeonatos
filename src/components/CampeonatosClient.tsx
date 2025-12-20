@@ -232,11 +232,11 @@ export const CampeonatosClient = ({
     <>
       <div>
         {/* Título e Botão */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Campeonatos</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">Campeonatos</h1>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors font-medium"
+            className="flex items-center justify-center gap-2 bg-blue-900 text-white px-4 py-3 md:py-2 rounded-lg hover:bg-blue-800 transition-colors font-medium h-12 md:h-10"
           >
             <FaPlus />
             Novo Campeonato

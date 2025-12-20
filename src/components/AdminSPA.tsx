@@ -5,6 +5,7 @@ import { CampeonatosClient } from "./CampeonatosClient";
 import { CategoryManager } from "./CategoryManager";
 import { DashboardClient } from "./DashboardClient";
 import { Header } from "./Header";
+import { MobileNavigationSheet } from "./MobileNavigationSheet";
 import { PartidasClient } from "./PartidasClient";
 import { SidebarWithNavigation } from "./SidebarWithNavigation";
 import { TimesAtletasClient } from "./TimesAtletasClient";
@@ -112,6 +113,14 @@ interface AdminSPAProps {
       description: string | null;
       active: boolean;
     }>;
+    matchesThisWeek: number;
+    nextMatch: {
+      homeTeam: string;
+      awayTeam: string;
+      scheduledAt: Date;
+    } | null;
+    totalTeams: number;
+    totalPlayers: number;
   };
   campeonatosData: {
     championships: Championship[];
@@ -146,6 +155,7 @@ export const AdminSPA = ({
 }: AdminSPAProps) => {
   const [currentView, setCurrentView] = useState<AdminView>(initialView);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Renderizar o conteúdo baseado na view atual
   const renderContent = () => {
@@ -156,6 +166,10 @@ export const AdminSPA = ({
             championships={dashboardData.championships}
             activeCount={dashboardData.activeCount}
             categories={dashboardData.categories}
+            matchesThisWeek={dashboardData.matchesThisWeek}
+            nextMatch={dashboardData.nextMatch}
+            totalTeams={dashboardData.totalTeams}
+            totalPlayers={dashboardData.totalPlayers}
           />
         );
       case "campeonatos":
@@ -178,7 +192,7 @@ export const AdminSPA = ({
         return (
           <div>
             <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">
                 Configurações
               </h1>
               <p className="text-gray-600 mt-2">
@@ -195,22 +209,35 @@ export const AdminSPA = ({
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <SidebarWithNavigation
-        isCollapsed={isSidebarCollapsed}
-        onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        currentView={currentView}
-        onViewChange={setCurrentView}
-      />
+      {/* Sidebar - Oculto em mobile, visível a partir de md */}
+      <div className="hidden md:block">
+        <SidebarWithNavigation
+          isCollapsed={isSidebarCollapsed}
+          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          currentView={currentView}
+          onViewChange={setCurrentView}
+        />
+      </div>
+      
+      {/* Container principal - Sem margin em mobile */}
       <div
         className={`flex-1 transition-all duration-300 ${
-          isSidebarCollapsed ? "ml-20" : "ml-64"
+          isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
         }`}
       >
         <Header
-          onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onToggleSidebar={() => setIsMobileMenuOpen(true)}
         />
-        <main className="p-6">{renderContent()}</main>
+        <main className="p-4 md:p-6">{renderContent()}</main>
       </div>
+
+      {/* Sheet Mobile Navigation */}
+      <MobileNavigationSheet
+        open={isMobileMenuOpen}
+        onOpenChange={setIsMobileMenuOpen}
+        currentView={currentView}
+        onViewChange={setCurrentView}
+      />
     </div>
   );
 };

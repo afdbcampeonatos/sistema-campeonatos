@@ -88,28 +88,125 @@ export const ChampionshipList = ({
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="px-4 md:px-6 py-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">
           Todos os Campeonatos ({championships.length})
         </h2>
       </div>
-      <div className="overflow-x-auto">
+
+      {/* Mobile: Cards Layout */}
+      {championships.length === 0 ? (
+        <div className="md:hidden p-8 text-center text-gray-500">
+          Nenhum campeonato encontrado
+        </div>
+      ) : (
+        <div className="md:hidden p-4 space-y-4">
+          {championships.map((championship) => (
+            <div
+              key={championship.id}
+              className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+            >
+              {/* Header com nome e ações */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-2 flex-1">
+                  <FaTrophy className="text-blue-900 text-lg shrink-0" />
+                  {onViewChampionship ? (
+                    <button
+                      onClick={() => onViewChampionship(championship.slug)}
+                      className="text-left"
+                    >
+                      <h3 className="text-sm font-semibold text-gray-900 hover:text-blue-900 transition-colors">
+                        {championship.name}
+                      </h3>
+                    </button>
+                  ) : (
+                    <Link
+                      href={`/campeonatos/${championship.slug}`}
+                      target="_blank"
+                      className="text-left"
+                    >
+                      <h3 className="text-sm font-semibold text-gray-900 hover:text-blue-900 transition-colors">
+                        {championship.name}
+                      </h3>
+                    </Link>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 ml-2">
+                  <Link
+                    href={`/campeonatos/${championship.slug}`}
+                    target="_blank"
+                    className="text-green-600 hover:text-green-900 transition-colors p-2"
+                    title="Ver página de inscrição"
+                  >
+                    <FaExternalLinkAlt className="text-lg" />
+                  </Link>
+                  <button
+                    onClick={() => setEditingChampionship(championship)}
+                    className="text-gray-600 hover:text-gray-900 transition-colors p-2"
+                    title="Editar"
+                  >
+                    <FaEdit className="text-lg" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(championship.id)}
+                    disabled={isDeleting}
+                    className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50 p-2"
+                    title="Excluir"
+                  >
+                    <FaTrash className="text-lg" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Informações */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">Categoria</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {championship.category}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">Status</span>
+                  <span
+                    className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      statusColors[championship.status] ||
+                      "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {statusLabels[championship.status] || championship.status}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">Criado em</span>
+                  <span className="text-sm text-gray-600">
+                    {formatDate(championship.createdAt)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Desktop: Table Layout */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Nome
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Categoria
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Criado em
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Ações
               </th>
             </tr>
@@ -117,7 +214,7 @@ export const ChampionshipList = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {championships.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={5} className="px-4 md:px-6 py-8 text-center text-gray-500">
                   Nenhum campeonato encontrado
                 </td>
               </tr>
@@ -127,7 +224,7 @@ export const ChampionshipList = ({
                   key={championship.id}
                   className="hover:bg-gray-50 transition-colors"
                 >
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
                     {onViewChampionship ? (
                       <button
                         onClick={() => onViewChampionship(championship.slug)}
@@ -151,12 +248,12 @@ export const ChampionshipList = ({
                       </Link>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
                     <span className="text-sm text-gray-600">
                       {championship.category}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
                     <span
                       className={`px-2 py-1 text-xs font-semibold rounded-full ${
                         statusColors[championship.status] ||
@@ -166,12 +263,12 @@ export const ChampionshipList = ({
                       {statusLabels[championship.status] || championship.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
                     <span className="text-sm text-gray-600">
                       {formatDate(championship.createdAt)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end gap-2">
                       <Link
                         href={`/campeonatos/${championship.slug}`}

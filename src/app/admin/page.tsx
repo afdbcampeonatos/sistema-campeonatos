@@ -4,6 +4,7 @@ import {
   updateChampionshipStatuses,
 } from "@/lib/championship-status";
 import { prisma } from "@/lib/prisma";
+import { addDays } from "date-fns";
 
 export default async function AdminPage() {
   // Atualizar status dos campeonatos antes de buscar
@@ -265,6 +266,80 @@ export default async function AdminPage() {
     console.error("Erro ao buscar dados:", error);
   }
 
+  // Buscar dados adicionais para o dashboard
+  let matchesThisWeek = 0;
+  let nextMatch: {
+    homeTeam: string;
+    awayTeam: string;
+    scheduledAt: Date;
+  } | null = null;
+  let totalTeams = 0;
+  let totalPlayers = 0;
+
+  try {
+    // Calcular próximos 7 dias a partir de hoje
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Início do dia
+    const weekEnd = addDays(today, 7);
+    weekEnd.setHours(23, 59, 59, 999); // Fim do dia
+
+    // Contar partidas dos próximos 7 dias
+    matchesThisWeek = await prisma.match.count({
+      where: {
+        scheduledAt: {
+          gte: today,
+          lte: weekEnd,
+        },
+        status: {
+          not: "CANCELLED",
+        },
+      },
+    });
+
+    // Buscar próxima partida
+    const nextMatchData = await prisma.match.findFirst({
+      where: {
+        scheduledAt: {
+          gte: today,
+        },
+        status: {
+          not: "CANCELLED",
+        },
+      },
+      include: {
+        homeTeam: {
+          select: {
+            name: true,
+          },
+        },
+        awayTeam: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        scheduledAt: "asc",
+      },
+    });
+
+    if (nextMatchData && nextMatchData.scheduledAt) {
+      nextMatch = {
+        homeTeam: nextMatchData.homeTeam.name,
+        awayTeam: nextMatchData.awayTeam.name,
+        scheduledAt: nextMatchData.scheduledAt,
+      };
+    }
+
+    // Contar total de times
+    totalTeams = await prisma.team.count();
+
+    // Contar total de players
+    totalPlayers = await prisma.player.count();
+  } catch (error) {
+    console.error("Erro ao buscar dados adicionais do dashboard:", error);
+  }
+
   return (
     <AdminSPA
       initialView="dashboard"
@@ -272,6 +347,10 @@ export default async function AdminPage() {
         championships: dashboardChampionships,
         activeCount,
         categories: dashboardCategories,
+        matchesThisWeek,
+        nextMatch,
+        totalTeams,
+        totalPlayers,
       }}
       campeonatosData={{
         championships: campeonatosChampionships,

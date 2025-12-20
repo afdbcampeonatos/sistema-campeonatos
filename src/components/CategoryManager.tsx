@@ -124,31 +124,96 @@ export const CategoryManager = ({ initialCategories }: CategoryManagerProps) => 
   return (
     <>
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-4 md:px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h2 className="text-lg font-semibold text-gray-900">Categorias</h2>
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors font-medium"
+            className="flex items-center justify-center gap-2 bg-blue-900 text-white px-4 py-3 md:py-2 rounded-lg hover:bg-blue-800 transition-colors font-medium h-12 md:h-10"
           >
             <FaPlus />
             Nova Categoria
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile: Cards Layout */}
+        {categories.length === 0 ? (
+          <div className="md:hidden p-8 text-center text-gray-500">
+            Nenhuma categoria cadastrada
+          </div>
+        ) : (
+          <div className="md:hidden p-4 space-y-4">
+            {categories.map((category) => (
+              <div
+                key={category.id}
+                className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+              >
+                {/* Header com nome e ações */}
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-900 flex-1">
+                    {category.name}
+                  </h3>
+                  <div className="flex items-center gap-2 ml-2">
+                    <button
+                      onClick={() => handleOpenModal(category)}
+                      className="text-blue-600 hover:text-blue-900 transition-colors p-2"
+                      title="Editar"
+                    >
+                      <FaEdit className="text-lg" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(category.id)}
+                      className="text-red-600 hover:text-red-900 transition-colors p-2"
+                      title="Excluir"
+                    >
+                      <FaTrash className="text-lg" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Informações */}
+                <div className="space-y-2">
+                  {category.description && (
+                    <div className="flex items-start justify-between">
+                      <span className="text-xs text-gray-500">Descrição</span>
+                      <span className="text-sm text-gray-600 text-right flex-1 ml-2">
+                        {category.description}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Status</span>
+                    <button
+                      onClick={() => handleToggleActive(category.id, category.active)}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors h-12 md:h-auto ${
+                        category.active
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                          : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
+                    >
+                      {category.active ? 'Ativa' : 'Inativa'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Desktop: Table Layout */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Nome
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Descrição
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 md:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ações
                 </th>
               </tr>
@@ -156,24 +221,24 @@ export const CategoryManager = ({ initialCategories }: CategoryManagerProps) => 
             <tbody className="bg-white divide-y divide-gray-200">
               {categories.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={4} className="px-4 md:px-6 py-8 text-center text-gray-500">
                     Nenhuma categoria cadastrada
                   </td>
                 </tr>
               ) : (
                 categories.map((category) => (
                   <tr key={category.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-gray-900">
                         {category.name}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 md:px-6 py-3 md:py-4">
                       <span className="text-sm text-gray-600">
                         {category.description || '-'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap">
                       <button
                         onClick={() => handleToggleActive(category.id, category.active)}
                         className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${
@@ -185,7 +250,7 @@ export const CategoryManager = ({ initialCategories }: CategoryManagerProps) => 
                         {category.active ? 'Ativa' : 'Inativa'}
                       </button>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-4 md:px-6 py-3 md:py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleOpenModal(category)}
@@ -230,8 +295,8 @@ export const CategoryManager = ({ initialCategories }: CategoryManagerProps) => 
               </div>
             )}
             
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900">
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200">
+              <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">
                 {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
               </h2>
               <button
