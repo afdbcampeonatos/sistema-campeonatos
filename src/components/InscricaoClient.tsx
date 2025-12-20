@@ -250,44 +250,12 @@ export const InscricaoClient = ({
         );
 
         if (playersWithoutPhotos.length > 0) {
-          console.error(
-            `[Client] ERRO: ${playersWithoutPhotos.length} jogador(es) sem foto!`
-          );
           setErrors({
             submit: `Erro: ${playersWithoutPhotos.length} jogador(es) não possui(em) foto. Por favor, adicione fotos para todos os jogadores antes de enviar.`,
           });
           setIsSubmitting(false);
           return;
         }
-
-        console.warn(
-          "[Client] VERIFICANDO ESTADO DOS JOGADORES:",
-          players.length
-        );
-        console.warn("[Client] VERIFICANDO ANTES DE ENVIAR:", {
-          playersCount: players.length,
-          playersWithPhotos: players.filter((p) => p.photoFile).length,
-        });
-
-        players.forEach((player, index) => {
-          console.warn(`[Client] Jogador ${index} (${player.name}):`, {
-            hasPhotoFile: !!player.photoFile,
-            photoFileType: typeof player.photoFile,
-            isFile: player.photoFile instanceof File,
-            photoFileConstructor: player.photoFile?.constructor?.name,
-          });
-        });
-
-        console.log(
-          "[Client] Estado dos jogadores antes de enviar:",
-          players.map((p) => ({
-            name: p.name,
-            hasPhotoFile: !!p.photoFile,
-            photoFileType: p.photoFile?.type,
-            photoFileSize: p.photoFile?.size,
-            isFileInstance: p.photoFile instanceof File,
-          }))
-        );
 
         const playersFormData = new FormData();
         let filesAddedCount = 0;
@@ -296,31 +264,11 @@ export const InscricaoClient = ({
           playersFormData.append(`players[${index}][name]`, player.name);
           playersFormData.append(`players[${index}][rg]`, player.rg);
 
-          // Log detalhado antes da verificação
-          console.warn(`[Client] DEBUG Jogador ${index} (${player.name}):`, {
-            playerId: player.id,
-            hasPhotoFileInState: !!player.photoFile,
-            photoFileType: typeof player.photoFile,
-            photoFileConstructor: player.photoFile?.constructor?.name,
-            photoFileIsFile: player.photoFile instanceof File,
-            hasPhotoFileInStore: hasPlayerFile(player.id),
-            storeFileSize: getPlayerFile(player.id)?.size,
-          });
-
           // Tentar usar arquivo do estado primeiro, depois do store global
           let photoFile =
             player.photoFile && player.photoFile instanceof File
               ? player.photoFile
               : getPlayerFile(player.id);
-
-          console.warn(`[Client] RESULTADO FINAL para jogador ${index}:`, {
-            found: !!photoFile,
-            source:
-              player.photoFile && player.photoFile instanceof File
-                ? "state"
-                : "store",
-            type: photoFile instanceof File ? "File" : typeof photoFile,
-          });
 
           // Tentar adicionar arquivo (File já é um Blob, então podemos usar diretamente)
           if (photoFile) {
@@ -328,39 +276,16 @@ export const InscricaoClient = ({
               // File extends Blob, então podemos usar diretamente
               playersFormData.append(`photo_${index}`, photoFile);
               filesAddedCount++;
-              console.log(
-                `[Client] Arquivo adicionado ao FormData para ${player.name}`
-              );
             } catch (error) {
-              console.error(
-                `[Client] Erro ao adicionar arquivo ao FormData:`,
-                error
-              );
+              console.error("Erro ao adicionar arquivo ao FormData:", error);
             }
-          } else {
-            console.warn(
-              `[Client] Nenhum arquivo encontrado para jogador ${player.name}`
-            );
           }
         });
-
-        // Verificação final do FormData antes de enviar
-        console.warn("[Client] FormData final antes de enviar:");
-        for (const [key, value] of playersFormData.entries()) {
-          if (value instanceof File) {
-            console.warn(`  ${key}: File (${value.size} bytes)`);
-          } else {
-            console.warn(`  ${key}: ${typeof value}`);
-          }
-        }
 
         // Validar se todos os arquivos foram adicionados
         const expectedFilesCount = players.length;
         if (filesAddedCount < expectedFilesCount) {
           const missingFilesCount = expectedFilesCount - filesAddedCount;
-          console.error(
-            `[Client] ERRO: Faltam ${missingFilesCount} arquivo(s) de foto!`
-          );
           setErrors({
             submit: `Erro: ${missingFilesCount} jogador(es) não possui(em) foto. Por favor, adicione fotos para todos os jogadores antes de enviar.`,
           });

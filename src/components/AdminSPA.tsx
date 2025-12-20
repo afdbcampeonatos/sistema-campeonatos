@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { DashboardClient } from './DashboardClient';
-import { CampeonatosClient } from './CampeonatosClient';
-import { TimesAtletasClient } from './TimesAtletasClient';
-import { CategoryManager } from './CategoryManager';
-import { SidebarWithNavigation } from './SidebarWithNavigation';
-import { Header } from './Header';
+import { useState } from "react";
+import { CampeonatosClient } from "./CampeonatosClient";
+import { CategoryManager } from "./CategoryManager";
+import { DashboardClient } from "./DashboardClient";
+import { Header } from "./Header";
+import { PartidasClient } from "./PartidasClient";
+import { SidebarWithNavigation } from "./SidebarWithNavigation";
+import { TimesAtletasClient } from "./TimesAtletasClient";
 
 interface Championship {
   id: string;
@@ -52,8 +53,50 @@ interface Team {
   }>;
 }
 
+interface Match {
+  id: string;
+  championshipId: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  homeScore: number;
+  awayScore: number;
+  status: string;
+  currentHalf: number;
+  currentMinute: number;
+  scheduledAt: Date | null;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  createdAt: Date;
+  championship: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  homeTeam: {
+    id: string;
+    name: string;
+    shieldUrl: string | null;
+  };
+  awayTeam: {
+    id: string;
+    name: string;
+    shieldUrl: string | null;
+  };
+}
+
+interface Championship {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 interface AdminSPAProps {
-  initialView?: 'dashboard' | 'campeonatos' | 'times-atletas' | 'configuracoes';
+  initialView?:
+    | "dashboard"
+    | "campeonatos"
+    | "partidas"
+    | "times-atletas"
+    | "configuracoes";
   dashboardData: {
     championships: Array<{
       id: string;
@@ -74,6 +117,10 @@ interface AdminSPAProps {
     championships: Championship[];
     categories: Category[];
   };
+  partidasData: {
+    matches: Match[];
+    championships: Championship[];
+  };
   timesAtletasData: {
     teams: Team[];
   };
@@ -82,12 +129,18 @@ interface AdminSPAProps {
   };
 }
 
-export type AdminView = 'dashboard' | 'campeonatos' | 'times-atletas' | 'configuracoes';
+export type AdminView =
+  | "dashboard"
+  | "campeonatos"
+  | "partidas"
+  | "times-atletas"
+  | "configuracoes";
 
 export const AdminSPA = ({
-  initialView = 'dashboard',
+  initialView = "dashboard",
   dashboardData,
   campeonatosData,
+  partidasData,
   timesAtletasData,
   configuracoesData,
 }: AdminSPAProps) => {
@@ -97,7 +150,7 @@ export const AdminSPA = ({
   // Renderizar o conteúdo baseado na view atual
   const renderContent = () => {
     switch (currentView) {
-      case 'dashboard':
+      case "dashboard":
         return (
           <DashboardClient
             championships={dashboardData.championships}
@@ -105,23 +158,32 @@ export const AdminSPA = ({
             categories={dashboardData.categories}
           />
         );
-      case 'campeonatos':
+      case "campeonatos":
         return (
           <CampeonatosClient
             championships={campeonatosData.championships}
             categories={campeonatosData.categories}
           />
         );
-      case 'times-atletas':
+      case "partidas":
         return (
-          <TimesAtletasClient teams={timesAtletasData.teams} />
+          <PartidasClient
+            matches={partidasData.matches}
+            championships={partidasData.championships}
+          />
         );
-      case 'configuracoes':
+      case "times-atletas":
+        return <TimesAtletasClient teams={timesAtletasData.teams} />;
+      case "configuracoes":
         return (
           <div>
             <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900">Configurações</h1>
-              <p className="text-gray-600 mt-2">Gerencie as categorias dos campeonatos</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Configurações
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Gerencie as categorias dos campeonatos
+              </p>
             </div>
             <CategoryManager initialCategories={configuracoesData.categories} />
           </div>
@@ -141,7 +203,7 @@ export const AdminSPA = ({
       />
       <div
         className={`flex-1 transition-all duration-300 ${
-          isSidebarCollapsed ? 'ml-20' : 'ml-64'
+          isSidebarCollapsed ? "ml-20" : "ml-64"
         }`}
       >
         <Header
@@ -152,4 +214,3 @@ export const AdminSPA = ({
     </div>
   );
 };
-

@@ -128,13 +128,7 @@ export async function createTeam(
     let shieldUrl: string | null = null;
     if (shieldFile && shieldFile.size > 0) {
       try {
-        console.log("[createTeam] Fazendo upload do escudo:", {
-          fileName: shieldFile.name,
-          fileSize: shieldFile.size,
-          fileType: shieldFile.type,
-        });
         shieldUrl = await uploadImage(shieldFile, "shields");
-        console.log("[createTeam] Escudo enviado com sucesso:", shieldUrl);
       } catch (error) {
         console.error("Erro ao fazer upload do escudo:", error);
         return {

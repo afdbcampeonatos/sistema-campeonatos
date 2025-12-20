@@ -1,14 +1,13 @@
-'use server';
+"use server";
 
-import { prisma } from '@/lib/prisma';
-import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
 import {
   MatchEventType,
   MatchStatus,
   calculateScoreFromEvents,
-  type MatchEvent,
-} from '@/core/domain/match';
+} from "@/core/domain/match";
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 // ============================================
 // ZOD SCHEMAS
@@ -17,16 +16,16 @@ import {
 const CreateEventSchema = z.object({
   matchId: z.string().uuid(),
   type: z.enum([
-    'GOAL',
-    'OWN_GOAL',
-    'YELLOW_CARD',
-    'RED_CARD',
-    'SUBSTITUTION',
-    'FOUL',
-    'MATCH_START',
-    'HALF_END',
-    'HALF_START',
-    'MATCH_END',
+    "GOAL",
+    "OWN_GOAL",
+    "YELLOW_CARD",
+    "RED_CARD",
+    "SUBSTITUTION",
+    "FOUL",
+    "MATCH_START",
+    "HALF_END",
+    "HALF_START",
+    "MATCH_END",
   ]),
   minute: z.number().int().min(0).max(120),
   half: z.number().int().min(1).max(2),
@@ -40,13 +39,13 @@ const CreateEventSchema = z.object({
 const UpdateMatchStatusSchema = z.object({
   matchId: z.string().uuid(),
   status: z.enum([
-    'SCHEDULED',
-    'FIRST_HALF',
-    'HALFTIME',
-    'SECOND_HALF',
-    'FINISHED',
-    'CANCELLED',
-    'PAUSED',
+    "SCHEDULED",
+    "FIRST_HALF",
+    "HALFTIME",
+    "SECOND_HALF",
+    "FINISHED",
+    "CANCELLED",
+    "PAUSED",
   ]),
   currentMinute: z.number().int().min(0).optional(),
   currentHalf: z.number().int().min(0).max(2).optional(),
@@ -68,7 +67,9 @@ export interface ActionResult<T = void> {
 
 export async function createMatchEvent(
   input: z.infer<typeof CreateEventSchema>
-): Promise<ActionResult<{ eventId: string; newScore: { home: number; away: number } }>> {
+): Promise<
+  ActionResult<{ eventId: string; newScore: { home: number; away: number } }>
+> {
   try {
     // Validate input
     const validated = CreateEventSchema.parse(input);
@@ -80,11 +81,11 @@ export async function createMatchEvent(
     });
 
     if (!match) {
-      return { success: false, error: 'Partida não encontrada' };
+      return { success: false, error: "Partida não encontrada" };
     }
 
-    if (match.status === 'FINISHED' || match.status === 'CANCELLED') {
-      return { success: false, error: 'Partida já foi finalizada' };
+    if (match.status === "FINISHED" || match.status === "CANCELLED") {
+      return { success: false, error: "Partida já foi finalizada" };
     }
 
     // Create the event
@@ -98,7 +99,9 @@ export async function createMatchEvent(
         playerId: validated.playerId,
         playerInId: validated.playerInId,
         playerOutId: validated.playerOutId,
-        metadata: validated.metadata ? JSON.parse(JSON.stringify(validated.metadata)) : undefined,
+        metadata: validated.metadata
+          ? JSON.parse(JSON.stringify(validated.metadata))
+          : undefined,
       },
     });
 
@@ -124,7 +127,7 @@ export async function createMatchEvent(
     });
 
     // Revalidate paths
-    revalidatePath(`/[orgSlug]/match-runner/${validated.matchId}`, 'page');
+    revalidatePath(`/admin/match-runner/${validated.matchId}`, "page");
 
     return {
       success: true,
@@ -134,11 +137,14 @@ export async function createMatchEvent(
       },
     };
   } catch (error) {
-    console.error('Error creating match event:', error);
+    console.error("Error creating match event:", error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: 'Dados inválidos: ' + error.issues[0]?.message };
+      return {
+        success: false,
+        error: "Dados inválidos: " + error.issues[0]?.message,
+      };
     }
-    return { success: false, error: 'Erro ao registrar evento' };
+    return { success: false, error: "Erro ao registrar evento" };
   }
 }
 
@@ -153,7 +159,7 @@ export async function updateMatchStatus(
     });
 
     if (!match) {
-      return { success: false, error: 'Partida não encontrada' };
+      return { success: false, error: "Partida não encontrada" };
     }
 
     const updateData: Record<string, unknown> = {
@@ -161,16 +167,16 @@ export async function updateMatchStatus(
     };
 
     // Handle status-specific updates
-    if (validated.status === 'FIRST_HALF') {
+    if (validated.status === "FIRST_HALF") {
       updateData.startedAt = new Date();
       updateData.currentHalf = 1;
       updateData.currentMinute = 0;
-    } else if (validated.status === 'HALFTIME') {
+    } else if (validated.status === "HALFTIME") {
       updateData.currentHalf = 1;
-    } else if (validated.status === 'SECOND_HALF') {
+    } else if (validated.status === "SECOND_HALF") {
       updateData.currentHalf = 2;
       updateData.currentMinute = 45;
-    } else if (validated.status === 'FINISHED') {
+    } else if (validated.status === "FINISHED") {
       updateData.finishedAt = new Date();
     }
 
@@ -207,15 +213,15 @@ export async function updateMatchStatus(
       });
     }
 
-    revalidatePath(`/[orgSlug]/match-runner/${validated.matchId}`, 'page');
+    revalidatePath(`/admin/match-runner/${validated.matchId}`, "page");
 
     return {
       success: true,
       data: { status: validated.status as MatchStatus },
     };
   } catch (error) {
-    console.error('Error updating match status:', error);
-    return { success: false, error: 'Erro ao atualizar status da partida' };
+    console.error("Error updating match status:", error);
+    return { success: false, error: "Erro ao atualizar status da partida" };
   }
 }
 
@@ -227,7 +233,7 @@ export async function deleteMatchEvent(eventId: string): Promise<ActionResult> {
     });
 
     if (!event) {
-      return { success: false, error: 'Evento não encontrado' };
+      return { success: false, error: "Evento não encontrado" };
     }
 
     // Delete the event
@@ -254,12 +260,12 @@ export async function deleteMatchEvent(eventId: string): Promise<ActionResult> {
       },
     });
 
-    revalidatePath(`/[orgSlug]/match-runner/${event.matchId}`, 'page');
+    revalidatePath(`/admin/match-runner/${event.matchId}`, "page");
 
     return { success: true };
   } catch (error) {
-    console.error('Error deleting match event:', error);
-    return { success: false, error: 'Erro ao remover evento' };
+    console.error("Error deleting match event:", error);
+    return { success: false, error: "Erro ao remover evento" };
   }
 }
 
@@ -283,7 +289,7 @@ export async function getMatch(matchId: string) {
           },
         },
         events: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           include: {
             player: { select: { id: true, name: true, photoUrl: true } },
             team: { select: { id: true, name: true, shieldUrl: true } },
@@ -296,7 +302,7 @@ export async function getMatch(matchId: string) {
 
     return match;
   } catch (error) {
-    console.error('Error fetching match:', error);
+    console.error("Error fetching match:", error);
     return null;
   }
 }

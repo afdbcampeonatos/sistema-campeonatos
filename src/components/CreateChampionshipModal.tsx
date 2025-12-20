@@ -5,6 +5,7 @@ import { useToast } from "@/contexts/ToastContext";
 import { generateSlug } from "@/lib/utils";
 import { FormEvent, useEffect, useState } from "react";
 import { FaSpinner, FaTimes } from "react-icons/fa";
+import { DateTimePicker } from "./DateTimePicker";
 import { LoadingSpinner } from "./LoadingSpinner";
 
 interface Category {
@@ -33,6 +34,8 @@ export const CreateChampionshipModal = ({
   const [name, setName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [generatedSlug, setGeneratedSlug] = useState("");
+  const [registrationStart, setRegistrationStart] = useState<Date | null>(null);
+  const [registrationEnd, setRegistrationEnd] = useState<Date | null>(null);
 
   // Fechar modal com ESC
   useEffect(() => {
@@ -66,6 +69,14 @@ export const CreateChampionshipModal = ({
     const form = e.currentTarget;
     const formData = new FormData(form);
 
+    // Adicionar datas ao FormData se existirem
+    if (registrationStart) {
+      formData.set("registrationStart", registrationStart.toISOString());
+    }
+    if (registrationEnd) {
+      formData.set("registrationEnd", registrationEnd.toISOString());
+    }
+
     try {
       const result = await createChampionship(formData);
 
@@ -74,6 +85,9 @@ export const CreateChampionshipModal = ({
         if (form) {
           form.reset();
         }
+        // Resetar estados de data
+        setRegistrationStart(null);
+        setRegistrationEnd(null);
         // Manter loading por mais um momento para mostrar feedback visual
         await new Promise((resolve) => setTimeout(resolve, 800));
         // Fechar modal e mostrar toast
@@ -137,10 +151,13 @@ export const CreateChampionshipModal = ({
 
   return (
     <div
-      className="fixed inset-0 bg-gray-900/30 backdrop-blur-md flex items-center justify-center z-[9999] p-4 animate-fadeIn"
+      className="fixed inset-0 bg-gray-900/30 backdrop-blur-md flex items-center justify-center z-9999 p-4 animate-fadeIn"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-lg shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-slideUp relative">
+      <div
+        className="bg-white rounded-lg shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-slideUp relative"
+        style={{ overflowX: "visible" }}
+      >
         {/* Loading Overlay */}
         {isSubmitting && (
           <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
@@ -254,12 +271,12 @@ export const CreateChampionshipModal = ({
             >
               Data de Início das Inscrições
             </label>
-            <input
-              type="datetime-local"
-              id="registrationStart"
-              name="registrationStart"
+            <DateTimePicker
+              value={registrationStart}
+              onChange={setRegistrationStart}
+              placeholder="Selecione data e hora de início"
               disabled={isSubmitting}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              minDate={new Date()}
             />
             <p className="mt-1 text-xs text-gray-500">
               Opcional: Defina quando as inscrições começam
@@ -274,12 +291,12 @@ export const CreateChampionshipModal = ({
             >
               Data de Fim das Inscrições
             </label>
-            <input
-              type="datetime-local"
-              id="registrationEnd"
-              name="registrationEnd"
+            <DateTimePicker
+              value={registrationEnd}
+              onChange={setRegistrationEnd}
+              placeholder="Selecione data e hora de fim"
               disabled={isSubmitting}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              minDate={registrationStart || new Date()}
             />
             <p className="mt-1 text-xs text-gray-500">
               Opcional: Defina quando as inscrições terminam

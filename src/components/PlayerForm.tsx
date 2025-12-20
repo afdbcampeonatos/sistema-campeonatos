@@ -72,24 +72,11 @@ export const PlayerForm = ({ players, onChange, errors }: PlayerFormProps) => {
     try {
       // Otimizar imagem
       const optimized = await optimizeImage(file, 400, 400, 0.8);
-      console.log(`[PlayerForm] Foto otimizada para ${playerId}:`, {
-        originalSize: file.size,
-        optimizedSize: optimized.file.size,
-        fileName: optimized.file.name,
-        fileType: optimized.file.type,
-      });
       updatePlayer(playerId, "photoFile", optimized.file);
       updatePlayer(playerId, "photoPreview", optimized.preview);
 
       // Salvar no store global (fora do estado React)
       setPlayerFile(playerId, optimized.file);
-
-      // Adicionar log para verificar se foi atualizado
-      console.warn(`[PlayerForm] Arquivo atualizado para ${playerId}:`, {
-        hasFile: !!optimized.file,
-        fileSize: optimized.file.size,
-        fileName: optimized.file.name,
-      });
     } catch (error) {
       console.error("Erro ao otimizar imagem:", error);
       alert("Erro ao processar imagem. Tente novamente.");

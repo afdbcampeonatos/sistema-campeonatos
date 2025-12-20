@@ -1,19 +1,30 @@
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+/**
+ * Merge de classes Tailwind CSS
+ * Combina clsx e tailwind-merge para merge inteligente de classes
+ */
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
 /**
  * Gera um slug a partir de um texto
  * Remove acentos, converte para minúsculas e substitui espaços por hífens
  */
 export function generateSlug(text: string): string {
-  if (!text) return '';
+  if (!text) return "";
 
   return text
     .toLowerCase()
-    .normalize('NFD') // Normaliza caracteres Unicode
-    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-    .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
+    .normalize("NFD") // Normaliza caracteres Unicode
+    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .replace(/[^a-z0-9\s-]/g, "") // Remove caracteres especiais
     .trim()
-    .replace(/\s+/g, '-') // Substitui espaços por hífens
-    .replace(/-+/g, '-') // Remove hífens duplicados
-    .replace(/^-+|-+$/g, ''); // Remove hífens no início e fim
+    .replace(/\s+/g, "-") // Substitui espaços por hífens
+    .replace(/-+/g, "-") // Remove hífens duplicados
+    .replace(/^-+|-+$/g, ""); // Remove hífens no início e fim
 }
 
 /**
@@ -34,4 +45,3 @@ export async function generateUniqueSlug(
 
   return slug;
 }
-

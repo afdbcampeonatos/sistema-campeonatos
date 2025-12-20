@@ -5,6 +5,7 @@ import { useToast } from "@/contexts/ToastContext";
 import { generateSlug } from "@/lib/utils";
 import { FormEvent, useEffect, useState } from "react";
 import { FaSpinner, FaTimes } from "react-icons/fa";
+import { DateTimePicker } from "./DateTimePicker";
 import { LoadingSpinner } from "./LoadingSpinner";
 
 interface Category {
@@ -44,12 +45,24 @@ export const EditChampionshipModal = ({
   const [formKey, setFormKey] = useState(0);
   const [name, setName] = useState("");
   const [generatedSlug, setGeneratedSlug] = useState("");
+  const [registrationStart, setRegistrationStart] = useState<Date | null>(null);
+  const [registrationEnd, setRegistrationEnd] = useState<Date | null>(null);
 
   // Preencher formulário quando o campeonato mudar
   useEffect(() => {
     if (championship) {
       setName(championship.name);
       setGeneratedSlug(championship.slug);
+      setRegistrationStart(
+        championship.registrationStart
+          ? new Date(championship.registrationStart)
+          : null
+      );
+      setRegistrationEnd(
+        championship.registrationEnd
+          ? new Date(championship.registrationEnd)
+          : null
+      );
       setFormKey((prev) => prev + 1);
       setError(null);
       setSuccess(false);
@@ -77,17 +90,6 @@ export const EditChampionshipModal = ({
 
   if (!isOpen || !championship) return null;
 
-  const formatDateTimeLocal = (date: Date | null): string => {
-    if (!date) return "";
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
-
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -96,6 +98,18 @@ export const EditChampionshipModal = ({
 
     const form = e.currentTarget;
     const formData = new FormData(form);
+
+    // Adicionar datas ao FormData se existirem
+    if (registrationStart) {
+      formData.set("registrationStart", registrationStart.toISOString());
+    } else {
+      formData.set("registrationStart", "");
+    }
+    if (registrationEnd) {
+      formData.set("registrationEnd", registrationEnd.toISOString());
+    } else {
+      formData.set("registrationEnd", "");
+    }
 
     try {
       const result = await updateChampionship(championship.id, formData);
@@ -281,13 +295,11 @@ export const EditChampionshipModal = ({
             >
               Data de Início das Inscrições
             </label>
-            <input
-              type="datetime-local"
-              id="registrationStart"
-              name="registrationStart"
-              defaultValue={formatDateTimeLocal(championship.registrationStart)}
+            <DateTimePicker
+              value={registrationStart}
+              onChange={setRegistrationStart}
+              placeholder="Selecione data e hora de início"
               disabled={isSubmitting}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900 disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <p className="mt-1 text-xs text-gray-500">
               Opcional: Defina quando as inscrições começam
@@ -302,13 +314,12 @@ export const EditChampionshipModal = ({
             >
               Data de Fim das Inscrições
             </label>
-            <input
-              type="datetime-local"
-              id="registrationEnd"
-              name="registrationEnd"
-              defaultValue={formatDateTimeLocal(championship.registrationEnd)}
+            <DateTimePicker
+              value={registrationEnd}
+              onChange={setRegistrationEnd}
+              placeholder="Selecione data e hora de fim"
               disabled={isSubmitting}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              minDate={registrationStart || undefined}
             />
             <p className="mt-1 text-xs text-gray-500">
               Opcional: Defina quando as inscrições terminam

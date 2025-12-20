@@ -19,24 +19,9 @@ export async function uploadImage(
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-  console.log("[uploadImage] Iniciando upload:", {
-    folder,
-    fileName: file.name,
-    fileSize: file.size,
-    fileType: file.type,
-  });
-  console.log("[uploadImage] Supabase configurado:", {
-    hasUrl: !!supabaseUrl,
-    hasKey: !!supabaseKey,
-    url: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : "não configurado",
-  });
-
   // Se Supabase não estiver configurado, usar modo de desenvolvimento (mock)
   if (!supabaseUrl || !supabaseKey) {
     if (process.env.NODE_ENV === "development") {
-      console.warn(
-        "[uploadImage] Modo desenvolvimento: retornando URL mockada"
-      );
       // Simular upload: criar uma URL mockada
       const timestamp = Date.now();
       const fileName = `${folder}/${timestamp}-${file.name}`;
@@ -59,8 +44,6 @@ export async function uploadImage(
   const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
   const fileName = `${folder}/${timestamp}-${sanitizedName}`;
 
-  console.log("[uploadImage] Tentando upload para:", fileName);
-
   const { data, error } = await supabase.storage
     .from("championships") // Nome do bucket no Supabase
     .upload(fileName, file, {
@@ -69,22 +52,15 @@ export async function uploadImage(
     });
 
   if (error) {
-    console.error("[uploadImage] Erro no upload:", {
-      message: error.message,
-      name: error.name,
-      error: error,
-    });
+    console.error("Erro no upload:", error.message);
     throw new Error(`Erro ao fazer upload: ${error.message}`);
   }
-
-  console.log("[uploadImage] Upload bem-sucedido:", data);
 
   // Obter URL pública
   const { data: urlData } = supabase.storage
     .from("championships")
     .getPublicUrl(fileName);
 
-  console.log("[uploadImage] URL pública gerada:", urlData.publicUrl);
   return urlData.publicUrl;
 }
 
@@ -117,9 +93,6 @@ export async function deleteImage(url: string): Promise<void> {
     )[1];
 
     if (!filePath) {
-      console.warn(
-        `Não foi possível extrair o caminho do arquivo da URL: ${url}`
-      );
       return;
     }
 

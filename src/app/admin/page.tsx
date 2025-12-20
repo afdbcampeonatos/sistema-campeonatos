@@ -56,6 +56,43 @@ export default async function AdminPage() {
     updatedAt: Date;
   }> = [];
 
+  // Buscar dados para partidas
+  let partidasMatches: Array<{
+    id: string;
+    championshipId: string;
+    homeTeamId: string;
+    awayTeamId: string;
+    homeScore: number;
+    awayScore: number;
+    status: string;
+    currentHalf: number;
+    currentMinute: number;
+    scheduledAt: Date | null;
+    startedAt: Date | null;
+    finishedAt: Date | null;
+    createdAt: Date;
+    championship: {
+      id: string;
+      name: string;
+      slug: string;
+    };
+    homeTeam: {
+      id: string;
+      name: string;
+      shieldUrl: string | null;
+    };
+    awayTeam: {
+      id: string;
+      name: string;
+      shieldUrl: string | null;
+    };
+  }> = [];
+  let partidasChampionships: Array<{
+    id: string;
+    name: string;
+    slug: string;
+  }> = [];
+
   // Buscar dados para times e atletas
   let timesAtletasTeams: Array<{
     id: string;
@@ -138,6 +175,64 @@ export default async function AdminPage() {
       },
     });
 
+    // Dados de partidas
+    const matches = await prisma.match.findMany({
+      include: {
+        championship: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        homeTeam: {
+          select: {
+            id: true,
+            name: true,
+            shieldUrl: true,
+          },
+        },
+        awayTeam: {
+          select: {
+            id: true,
+            name: true,
+            shieldUrl: true,
+          },
+        },
+      },
+      orderBy: [{ scheduledAt: "desc" }, { createdAt: "desc" }],
+    });
+
+    partidasMatches = matches.map((match) => ({
+      id: match.id,
+      championshipId: match.championshipId,
+      homeTeamId: match.homeTeamId,
+      awayTeamId: match.awayTeamId,
+      homeScore: match.homeScore,
+      awayScore: match.awayScore,
+      status: match.status,
+      currentHalf: match.currentHalf,
+      currentMinute: match.currentMinute,
+      scheduledAt: match.scheduledAt,
+      startedAt: match.startedAt,
+      finishedAt: match.finishedAt,
+      createdAt: match.createdAt,
+      championship: match.championship,
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+    }));
+
+    partidasChampionships = await prisma.championship.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
     // Dados de times e atletas
     const teams = await prisma.team.findMany({
       include: {
@@ -181,6 +276,10 @@ export default async function AdminPage() {
       campeonatosData={{
         championships: campeonatosChampionships,
         categories: campeonatosCategories,
+      }}
+      partidasData={{
+        matches: partidasMatches,
+        championships: partidasChampionships,
       }}
       timesAtletasData={{
         teams: timesAtletasTeams,

@@ -8,31 +8,76 @@ export async function GET(
 ) {
   try {
     // Verificar autenticação
-    const session = await getSession();
+    let session;
+    try {
+      session = await getSession();
+    } catch (authError) {
+      console.error("Erro ao verificar autenticação:", authError);
+      return NextResponse.json(
+        { error: "Erro ao verificar autenticação" },
+        { status: 500 }
+      );
+    }
+
     if (!session) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const { slug } = await params;
+    // Obter slug dos params
+    let slug: string;
+    try {
+      const paramsData = await params;
+      slug = paramsData.slug;
+    } catch (paramsError) {
+      console.error("Erro ao obter params:", paramsError);
+      return NextResponse.json(
+        { error: "Parâmetros inválidos" },
+        { status: 400 }
+      );
+    }
+
+    if (!slug || typeof slug !== "string") {
+      return NextResponse.json(
+        { error: "Slug do campeonato é obrigatório" },
+        { status: 400 }
+      );
+    }
 
     // Buscar campeonato com times e jogadores
-    const championship = await prisma.championship.findUnique({
-      where: { slug },
-      include: {
-        teams: {
-          include: {
-            players: {
-              orderBy: {
-                name: "asc",
+    let championship;
+    try {
+      championship = await prisma.championship.findUnique({
+        where: { slug },
+        include: {
+          teams: {
+            include: {
+              players: {
+                orderBy: {
+                  name: "asc",
+                },
               },
             },
-          },
-          orderBy: {
-            createdAt: "desc",
+            orderBy: {
+              createdAt: "desc",
+            },
           },
         },
-      },
-    });
+      });
+    } catch (dbError) {
+      console.error("Erro ao buscar campeonato:", dbError);
+      return NextResponse.json(
+        {
+          error: "Erro ao buscar campeonato no banco de dados",
+          details:
+            process.env.NODE_ENV === "development"
+              ? dbError instanceof Error
+                ? dbError.message
+                : "Erro desconhecido"
+              : undefined,
+        },
+        { status: 500 }
+      );
+    }
 
     if (!championship) {
       return NextResponse.json(
@@ -46,8 +91,14 @@ export async function GET(
     });
   } catch (error) {
     console.error("Erro ao buscar times do campeonato:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Erro desconhecido";
     return NextResponse.json(
-      { error: "Erro ao buscar times do campeonato" },
+      {
+        error: "Erro ao buscar times do campeonato",
+        details:
+          process.env.NODE_ENV === "development" ? errorMessage : undefined,
+      },
       { status: 500 }
     );
   }

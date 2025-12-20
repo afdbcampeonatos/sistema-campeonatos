@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Rotas que precisam de autenticação
-  // - /admin/* (todo o sistema administrativo)
+  // - /admin/* (todo o sistema administrativo, incluindo match-runner)
   const isProtectedPath = pathname.startsWith("/admin");
 
   // Se a rota é protegida e não há token de sessão, redirecionar para login

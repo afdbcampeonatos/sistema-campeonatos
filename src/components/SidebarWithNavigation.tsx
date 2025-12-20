@@ -1,6 +1,6 @@
 "use client";
 
-import { FaCog, FaTrophy, FaUsers } from "react-icons/fa";
+import { FaCog, FaFutbol, FaTrophy, FaUsers } from "react-icons/fa";
 import { HiHome, HiMenuAlt2 } from "react-icons/hi";
 import type { AdminView } from "./AdminSPA";
 
@@ -63,6 +63,12 @@ export const SidebarWithNavigation = ({
       id: "campeonatos" as AdminView,
       icon: <FaTrophy />,
       label: "Campeonatos",
+      section: "gestao",
+    },
+    {
+      id: "partidas" as AdminView,
+      icon: <FaFutbol />,
+      label: "Partidas",
       section: "gestao",
     },
     {

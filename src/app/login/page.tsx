@@ -32,21 +32,16 @@ export default function LoginPage() {
         setIsLoading(false);
       } else {
         // Login bem-sucedido (result.ok é true ou result não tem error)
-        console.log('✅ Login bem-sucedido');
-        
         // Atualizar a sessão para garantir que ela seja carregada
         try {
           await update();
-          console.log('✅ Sessão atualizada');
         } catch (err) {
-          console.error('⚠️ Erro ao atualizar sessão:', err);
+          console.error('Erro ao atualizar sessão:', err);
         }
         
         // Redirecionar para a página admin
         const searchParams = new URLSearchParams(window.location.search);
         const callbackUrl = searchParams.get('callbackUrl') || '/admin';
-        
-        console.log('🔄 Redirecionando para:', callbackUrl);
         
         // Aguardar um pouco para garantir que o cookie seja definido
         // e então usar window.location.href para forçar um reload completo

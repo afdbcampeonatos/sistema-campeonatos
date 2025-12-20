@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaImage } from "react-icons/fa";
 import { LoadingSpinner } from "./LoadingSpinner";
 
@@ -21,6 +21,7 @@ export const ImageWithLoading = ({
 }: ImageWithLoadingProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   // Reset states when src changes
   useEffect(() => {
@@ -32,6 +33,36 @@ export const ImageWithLoading = ({
       setHasError(true);
     }
   }, [src]);
+
+  // Verificar se a imagem já está carregada (em cache)
+  useEffect(() => {
+    if (!src) return;
+
+    // Usar setTimeout para garantir que o elemento img já foi renderizado
+    const checkImageLoaded = () => {
+      if (imgRef.current?.complete) {
+        setIsLoading(false);
+        setHasError(false);
+      }
+    };
+
+    // Verificar imediatamente e após um pequeno delay
+    checkImageLoaded();
+    const timeoutId = setTimeout(checkImageLoaded, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [src]);
+
+  // Timeout de segurança para evitar spinner infinito
+  useEffect(() => {
+    if (!src || !isLoading) return;
+
+    const timeout = setTimeout(() => {
+      setIsLoading(false);
+    }, 10000); // 10 segundos
+
+    return () => clearTimeout(timeout);
+  }, [src, isLoading]);
 
   // Se não há src, mostrar placeholder
   if (!src) {
@@ -83,6 +114,7 @@ export const ImageWithLoading = ({
       {/* Imagem */}
       {!hasError && (
         <img
+          ref={imgRef}
           src={src}
           alt={alt}
           onLoad={handleLoad}

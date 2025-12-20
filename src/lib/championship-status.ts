@@ -37,9 +37,6 @@ export async function updateChampionshipStatuses(): Promise<void> {
         },
       });
 
-      console.log(
-        `Fechados ${championshipsToClose.length} campeonato(s) com inscrições expiradas`
-      );
     }
 
     // Reabrir campeonatos com status CLOSED que têm datas válidas
@@ -88,9 +85,6 @@ export async function updateChampionshipStatuses(): Promise<void> {
         },
       });
 
-      console.log(
-        `Reabertos ${closedChampionshipsToReopen.length} campeonato(s) com datas válidas`
-      );
     }
 
     // Opcional: Abrir campeonatos com status DRAFT cuja data de início chegou
@@ -126,9 +120,6 @@ export async function updateChampionshipStatuses(): Promise<void> {
         },
       });
 
-      console.log(
-        `Abertos ${championshipsToOpen.length} campeonato(s) com inscrições iniciadas`
-      );
     }
   } catch (error) {
     console.error("Erro ao atualizar status dos campeonatos:", error);

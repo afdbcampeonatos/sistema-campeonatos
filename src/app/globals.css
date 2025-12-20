@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "react-day-picker/dist/style.css";
 
 /* Design System - Cores AFDB */
 :root {
@@ -14,11 +15,11 @@
   --color-foreground: var(--foreground);
   --color-sidebar-bg: var(--sidebar-bg);
   --color-accent-blue: var(--accent-blue);
-  
+
   /* Fontes */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  
+
   /* Cores customizadas para uso no Tailwind */
   --color-slate-900: #111827;
   --color-blue-900: #1e3a8a;
