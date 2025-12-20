@@ -1,0 +1,9 @@
+{
+  "prisma.fileWatcher": true,
+  "prisma.showPrismaDataPlatformNotification": false,
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma",
+    "editor.formatOnSave": true
+  },
+  "prisma.pinToPrisma6": true
+}

@@ -1,5 +1,33 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Variáveis de Ambiente
+
+Crie um arquivo `.env.local` na raiz do projeto com as seguintes variáveis:
+
+### Banco de Dados (PostgreSQL/Supabase)
+
+```
+DATABASE_URL=postgresql://user:password@host:port/database?pgbouncer=true
+DIRECT_URL=postgresql://user:password@host:port/database
+```
+
+### Supabase Storage (para upload de imagens)
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+**Nota:** Se as variáveis do Supabase não estiverem configuradas, o sistema funcionará em modo de desenvolvimento com URLs mockadas para as imagens.
+
+### Configuração do Supabase Storage
+
+1. Acesse o painel do Supabase
+2. Vá em Storage e crie um bucket chamado `championships`
+3. Configure as políticas de acesso:
+   - **Leitura:** Público (public)
+   - **Escrita:** Autenticado (authenticated) ou conforme sua necessidade
+
 ## Getting Started
 
 First, run the development server:

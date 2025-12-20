@@ -1,0 +1,190 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Prisma 6 Configuration
+// Using prisma-client-js (compatible with Prisma 6.19.0)
+// The client will be generated to node_modules/.prisma/client by default
+// and can be imported via @prisma/client
+generator client {
+  provider = "prisma-client-js"
+  // Note: In Prisma 6, explicit output is optional but recommended for custom paths
+  // Default output: node_modules/.prisma/client (works with @prisma/client import)
+}
+
+// PostgreSQL (Supabase)
+// DATABASE_URL: Connection pooling para queries (pgbouncer)
+// DIRECT_URL: Conexão direta para migrations e operações DDL
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("categories")
+}
+
+model Championship {
+  id                String    @id @default(uuid())
+  name              String
+  slug              String    @unique
+  category          String
+  status            String    @default("OPEN")
+  registrationStart DateTime?
+  registrationEnd   DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  teams   Team[]
+  matches Match[]
+
+  @@map("championships")
+}
+
+model Team {
+  id              String   @id @default(uuid())
+  championshipId  String
+  name            String
+  category        String
+  responsibleName String // Responsável/Técnico
+  responsibleCpf  String // CPF do Responsável (para pagamento)
+  phone           String // WhatsApp/Telefone para Contato
+  shieldUrl       String? // URL da imagem do escudo no Supabase Storage
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  championship Championship @relation(fields: [championshipId], references: [id], onDelete: Cascade)
+  players      Player[]
+  homeMatches  Match[]      @relation("HomeMatches")
+  awayMatches  Match[]      @relation("AwayMatches")
+  matchEvents  MatchEvent[]
+
+  @@map("teams")
+}
+
+model Player {
+  id        String   @id @default(uuid())
+  teamId    String
+  name      String
+  rg        String
+  photoUrl  String? // URL da foto no Supabase Storage
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  team             Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  matchEvents      MatchEvent[] @relation("EventPlayer")
+  substitutionsIn  MatchEvent[] @relation("SubstitutionIn")
+  substitutionsOut MatchEvent[] @relation("SubstitutionOut")
+
+  @@map("players")
+}
+
+// ============================================
+// MATCH ENGINE - Event Sourcing Lite
+// ============================================
+
+enum MatchStatus {
+  SCHEDULED
+  FIRST_HALF
+  HALFTIME
+  SECOND_HALF
+  FINISHED
+  CANCELLED
+  PAUSED
+}
+
+enum MatchEventType {
+  GOAL
+  OWN_GOAL
+  YELLOW_CARD
+  RED_CARD
+  SUBSTITUTION
+  FOUL
+  MATCH_START
+  HALF_END
+  HALF_START
+  MATCH_END
+}
+
+model Match {
+  id             String @id @default(uuid())
+  championshipId String
+  homeTeamId     String
+  awayTeamId     String
+
+  // Denormalized for fast reads (derived from events)
+  homeScore Int @default(0)
+  awayScore Int @default(0)
+
+  // Match state
+  status        MatchStatus @default(SCHEDULED)
+  currentHalf   Int         @default(0) // 0 = not started, 1 = first half, 2 = second half
+  currentMinute Int         @default(0)
+
+  // Scheduling
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  finishedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  championship Championship @relation(fields: [championshipId], references: [id], onDelete: Cascade)
+  homeTeam     Team         @relation("HomeMatches", fields: [homeTeamId], references: [id])
+  awayTeam     Team         @relation("AwayMatches", fields: [awayTeamId], references: [id])
+  events       MatchEvent[]
+
+  @@map("matches")
+}
+
+model MatchEvent {
+  id      String         @id @default(uuid())
+  matchId String
+  type    MatchEventType
+  minute  Int
+  half    Int            @default(1) // 1 or 2
+
+  // Optional references
+  playerId String? // Player who caused/received the event
+  teamId   String // Which team the event relates to
+
+  // For substitutions
+  playerInId  String? // Substitution: player coming in
+  playerOutId String? // Substitution: player going out
+
+  // Flexible metadata (penalty info, foul description, etc.)
+  metadata Json?
+
+  // Immutable event timestamp
+  createdAt DateTime @default(now())
+
+  // Relations
+  match     Match   @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player    Player? @relation("EventPlayer", fields: [playerId], references: [id])
+  team      Team    @relation(fields: [teamId], references: [id])
+  playerIn  Player? @relation("SubstitutionIn", fields: [playerInId], references: [id])
+  playerOut Player? @relation("SubstitutionOut", fields: [playerOutId], references: [id])
+
+  @@index([matchId, createdAt])
+  @@map("match_events")
+}
