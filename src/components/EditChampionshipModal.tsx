@@ -3,7 +3,7 @@
 import { updateChampionship } from "@/app/actions/championships";
 import { useToast } from "@/contexts/ToastContext";
 import { generateSlug } from "@/lib/utils";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, startTransition, useEffect, useState } from "react";
 import { FaSpinner, FaTimes } from "react-icons/fa";
 import { DateTimePicker } from "./DateTimePicker";
 import { LoadingSpinner } from "./LoadingSpinner";
@@ -41,7 +41,6 @@ export const EditChampionshipModal = ({
   const toast = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const [name, setName] = useState("");
   const [generatedSlug, setGeneratedSlug] = useState("");
@@ -51,21 +50,24 @@ export const EditChampionshipModal = ({
   // Preencher formulário quando o campeonato mudar
   useEffect(() => {
     if (championship) {
-      setName(championship.name);
-      setGeneratedSlug(championship.slug);
-      setRegistrationStart(
-        championship.registrationStart
-          ? new Date(championship.registrationStart)
-          : null
-      );
-      setRegistrationEnd(
-        championship.registrationEnd
-          ? new Date(championship.registrationEnd)
-          : null
-      );
-      setFormKey((prev) => prev + 1);
-      setError(null);
-      setSuccess(false);
+      // Sincronizar props com state - padrão válido para formulários controlados
+      // Usar startTransition para agrupar atualizações de estado e evitar renders em cascata
+      startTransition(() => {
+        setName(championship.name);
+        setGeneratedSlug(championship.slug);
+        setRegistrationStart(
+          championship.registrationStart
+            ? new Date(championship.registrationStart)
+            : null
+        );
+        setRegistrationEnd(
+          championship.registrationEnd
+            ? new Date(championship.registrationEnd)
+            : null
+        );
+        setFormKey((prev) => prev + 1);
+        setError(null);
+      });
     }
   }, [championship]);
 
@@ -94,7 +96,6 @@ export const EditChampionshipModal = ({
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
-    setSuccess(false);
 
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -131,6 +132,7 @@ export const EditChampionshipModal = ({
         toast.error(errorMessage);
       }
     } catch (error) {
+      console.error("Erro ao atualizar campeonato:", error);
       setIsSubmitting(false);
       const errorMessage = "Erro inesperado ao atualizar campeonato";
       setError(errorMessage);
@@ -141,7 +143,6 @@ export const EditChampionshipModal = ({
   const handleClose = () => {
     if (!isSubmitting) {
       setError(null);
-      setSuccess(false);
       setName("");
       setGeneratedSlug("");
       setFormKey((prev) => prev + 1);
@@ -164,7 +165,7 @@ export const EditChampionshipModal = ({
 
   return (
     <div
-      className="fixed inset-0 bg-gray-900/30 backdrop-blur-md flex items-center justify-center z-[9999] p-4 animate-fadeIn"
+      className="fixed inset-0 bg-gray-900/30 backdrop-blur-md flex items-center justify-center z-9999 p-4 animate-fadeIn"
       onClick={handleBackdropClick}
     >
       <div className="bg-white rounded-lg shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-slideUp relative">

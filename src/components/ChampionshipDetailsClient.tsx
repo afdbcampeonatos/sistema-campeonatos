@@ -71,6 +71,7 @@ interface Match {
   scheduledAt: Date | null;
   startedAt: Date | null;
   finishedAt: Date | null;
+  createdAt: Date;
   homeTeam: {
     id: string;
     name: string;

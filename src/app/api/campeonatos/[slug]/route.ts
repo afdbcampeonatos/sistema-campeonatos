@@ -9,7 +9,7 @@ export async function GET(
   try {
     // Atualizar status dos campeonatos antes de buscar
     try {
-      await updateChampionshipStatuses();
+    await updateChampionshipStatuses();
     } catch (statusError) {
       console.error("Erro ao atualizar status dos campeonatos:", statusError);
       // Não falhar completamente se updateChampionshipStatuses falhar
@@ -41,8 +41,8 @@ export async function GET(
     let championship;
     try {
       championship = await prisma.championship.findUnique({
-        where: { slug },
-      });
+      where: { slug },
+    });
     } catch (dbError) {
       console.error("Erro ao buscar campeonato:", dbError);
       return NextResponse.json(

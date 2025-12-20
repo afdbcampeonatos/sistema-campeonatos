@@ -29,7 +29,6 @@ export const CreateChampionshipModal = ({
   const toast = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const [name, setName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -63,7 +62,6 @@ export const CreateChampionshipModal = ({
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
-    setSuccess(false);
 
     // Guardar referência do formulário antes do await
     const form = e.currentTarget;
@@ -101,6 +99,7 @@ export const CreateChampionshipModal = ({
         toast.error(errorMessage);
       }
     } catch (error) {
+      console.error("Error creating championship:", error);
       setIsSubmitting(false);
       const errorMessage = "Erro inesperado ao criar campeonato";
       setError(errorMessage);
@@ -111,7 +110,6 @@ export const CreateChampionshipModal = ({
   const handleClose = () => {
     if (!isSubmitting) {
       setError(null);
-      setSuccess(false);
       setName("");
       setSelectedCategory("");
       setGeneratedSlug("");

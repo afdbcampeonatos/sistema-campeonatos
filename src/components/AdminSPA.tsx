@@ -84,7 +84,7 @@ interface Match {
   };
 }
 
-interface Championship {
+interface ChampionshipSummary {
   id: string;
   name: string;
   slug: string;
@@ -119,7 +119,7 @@ interface AdminSPAProps {
   };
   partidasData: {
     matches: Match[];
-    championships: Championship[];
+    championships: ChampionshipSummary[];
   };
   timesAtletasData: {
     teams: Team[];
