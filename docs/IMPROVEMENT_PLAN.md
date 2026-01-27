@@ -5,21 +5,13 @@ O projeto possui uma base sólida utilizando Next.js 14+ (App Router), TypeScrip
 
 ## 2. Lacunas Críticas (vs CLAUDE.md)
 
-### A. Multi-tenancy (Prioridade Alta)
-- **Estado Atual**: O banco de dados não possui isolamento por tenant/escola. Tabelas como `User`, `Championship`, `Team` são globais.
-- **Risco**: Uma escola poderia acessar dados de outra. Escabilidade comprometida.
-- **Melhoria**:
-  - Adicionar model `Organization` ou `School`.
-  - Adicionar `organizationId` em todas as tabelas principais.
-  - Implementar Middleware para verificação de tenant.
-
-### B. "Live Match Mode" (Fator Uau)
+### A. "Live Match Mode" (Fator Uau)
 - **Estado Atual**: Existe o `MatchRunner` para admins, mas a atualização é feita via React Query (invalidação de cache) após ações do admin. Não encontrei subscrições via WebSocket (Supabase Realtime) para que pais/torcedores vejam atualizações instantâneas sem recarregar a página.
 - **Melhoria**:
   - Integrar `supabase.channel` no `match-store.ts` para ouvir eventos `INSERT` na tabela `MatchEvent`.
   - Criar uma view pública da partida (`/partida/[id]/aovivo`) otimizada para mobile.
 
-### C. Gerador de "Player Card" (Fator Uau)
+### B. Gerador de "Player Card" (Fator Uau)
 - **Estado Atual**: O sistema faz upload e otimização de imagens, mas não gera o card "estilo FIFA" prometido.
 - **Melhoria**:
   - Implementar geração de imagem usando `canvas` ou `satori` (para geração server-side de OG Images).
@@ -37,10 +29,9 @@ O projeto possui uma base sólida utilizando Next.js 14+ (App Router), TypeScrip
 
 ## 4. Plano de Ação Recomendado
 
-1.  **Refatoração do Schema**: Adicionar `Organization` e relações.
-2.  **Implementar Realtime**: Configurar Supabase Realtime para partidas.
-3.  **Desenvolver Gerador de Cards**: Criar componente de compartilhamento social.
-4.  **Review de Segurança**: Garantir RLS (Row Level Security) no Supabase se for usado acesso direto do client (atualmente parece ser tudo via Server Actions, o que é mais seguro, mas RLS é boa prática).
+1.  **Implementar Realtime**: Configurar Supabase Realtime para partidas.
+2.  **Desenvolver Gerador de Cards**: Criar componente de compartilhamento social.
+3.  **Review de Segurança**: Garantir RLS (Row Level Security) no Supabase se for usado acesso direto do client (atualmente parece ser tudo via Server Actions, o que é mais seguro, mas RLS é boa prática).
 
 ---
 *Gerado por Antigravity*
