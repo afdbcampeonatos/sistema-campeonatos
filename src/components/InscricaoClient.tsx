@@ -15,6 +15,7 @@ import {
 import { FormEvent, useEffect, useState } from "react";
 import {
   FaCheckCircle,
+  FaCopy,
   FaExclamationTriangle,
   FaSpinner,
   FaUpload,
@@ -28,6 +29,13 @@ interface ChampionshipData {
   status: string;
   registrationStart: string | null;
   registrationEnd: string | null;
+  registrationFee?: number;
+}
+
+interface PaymentData {
+  pixQrCode: string;
+  pixQrCodeUrl: string;
+  value: number;
 }
 
 interface InscricaoClientProps {
@@ -42,6 +50,7 @@ export const InscricaoClient = ({
     category: "",
     responsibleName: "",
     responsibleCpf: "",
+    email: "",
     phone: "",
     shield: null as File | null,
   });
@@ -51,9 +60,14 @@ export const InscricaoClient = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
   const [championshipData] = useState<ChampionshipData>(
     initialChampionshipData
   );
+  const [teamId, setTeamId] = useState<string | null>(null);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
 
   // Função para verificar se as inscrições estão abertas
   const isRegistrationOpenCheck = () => {
@@ -110,6 +124,30 @@ export const InscricaoClient = ({
       }
     };
   }, [isSuccess]);
+
+  // Polling para verificar status do pagamento
+  useEffect(() => {
+    if (!paymentData || !teamId || paymentConfirmed) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/payments/${teamId}/status`);
+        const data = await response.json();
+
+        if (data.paymentStatus === "RECEIVED" || data.teamStatus === "APPROVED") {
+          setPaymentConfirmed(true);
+          if (data.invoiceUrl) {
+            setInvoiceUrl(data.invoiceUrl);
+          }
+          clearInterval(pollInterval);
+        }
+      } catch (error) {
+        console.error("Erro ao verificar status do pagamento:", error);
+      }
+    }, 5000); // Poll a cada 5 segundos
+
+    return () => clearInterval(pollInterval);
+  }, [paymentData, teamId, paymentConfirmed]);
 
   const handleInputChange = (field: string, value: string) => {
     let processedValue = value;
@@ -174,6 +212,14 @@ export const InscricaoClient = ({
     });
   };
 
+  const handleCopyPix = () => {
+    if (paymentData?.pixQrCode) {
+      navigator.clipboard.writeText(paymentData.pixQrCode);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -198,6 +244,12 @@ export const InscricaoClient = ({
       newErrors.responsibleCpf = "CPF é obrigatório";
     } else if (!validateCPF(formData.responsibleCpf)) {
       newErrors.responsibleCpf = "CPF inválido";
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "E-mail é obrigatório";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "E-mail inválido";
     }
 
     if (!formData.phone.trim()) {
@@ -228,6 +280,7 @@ export const InscricaoClient = ({
         "responsibleCpf",
         unmaskCPF(formData.responsibleCpf)
       );
+      submitFormData.append("email", formData.email);
       submitFormData.append("phone", formData.phone);
       if (formData.shield) {
         submitFormData.append("shield", formData.shield);
@@ -240,6 +293,19 @@ export const InscricaoClient = ({
         setErrors({ submit: teamResult.error || "Erro ao criar time" });
         setIsSubmitting(false);
         return;
+      }
+
+      // Salvar ID do time para polling
+      if (teamResult.data?.id) {
+        setTeamId(teamResult.data.id);
+      }
+
+      // Se houver dados de pagamento, salvar no estado
+      if (teamResult.data?.paymentData) {
+        setPaymentData(teamResult.data.paymentData);
+      } else if (teamResult.error) {
+        // Se não houver paymentData mas houver erro, mostrar alerta
+        setErrors({ paymentError: teamResult.error });
       }
 
       // Criar jogadores (se houver)
@@ -397,6 +463,110 @@ export const InscricaoClient = ({
               </p>
             </div>
           </>
+        ) : paymentConfirmed ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center animate-fadeIn">
+            <FaCheckCircle className="text-6xl text-green-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Pagamento Confirmado!
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Sua inscrição foi confirmada com sucesso.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              Você receberá um e-mail de confirmação em breve.
+            </p>
+            {invoiceUrl && (
+              <a
+                href={invoiceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"
+              >
+                Ver Fatura/Comprovante
+              </a>
+            )}
+          </div>
+        ) : paymentData ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mt-6 max-w-2xl mx-auto">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 mb-4">
+                <FaCheckCircle className="text-3xl" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Pré-inscrição realizada!
+              </h2>
+              <p className="text-gray-600">
+                Para confirmar sua inscrição, realize o pagamento da taxa de{" "}
+                <span className="font-bold text-gray-900">
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }).format(paymentData.value)}
+                </span>
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 mb-6">
+              <div className="flex flex-col items-center">
+                <p className="text-sm font-medium text-gray-700 mb-4">
+                  Escaneie o QR Code com o app do seu banco
+                </p>
+                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
+                  <img
+                    src={paymentData.pixQrCodeUrl}
+                    alt="QR Code Pix"
+                    className="w-48 h-48 md:w-64 md:h-64 object-contain"
+                  />
+                </div>
+
+                <div className="w-full">
+                  <p className="text-sm font-medium text-gray-700 mb-2 text-center">
+                    Ou copie o código Pix Copia e Cola
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={paymentData.pixQrCode}
+                      className="flex-1 bg-white border border-gray-300 text-gray-500 text-sm rounded-lg px-3 py-2 focus:outline-none"
+                    />
+                    <button
+                      onClick={handleCopyPix}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-800 transition-colors font-medium min-w-[100px] justify-center"
+                    >
+                      {isCopied ? (
+                        <>
+                          <FaCheckCircle /> Copiado
+                        </>
+                      ) : (
+                        <>
+                          <FaCopy /> Copiar
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Indicador de Aguardando Pagamento */}
+                <div className="flex items-center justify-center gap-2 text-blue-600 mt-6 animate-pulse">
+                  <FaSpinner className="animate-spin" />
+                  <span className="text-sm font-medium">Aguardando confirmação do pagamento...</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800 flex items-start gap-3">
+              <FaExclamationTriangle className="mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold mb-1">Importante</p>
+                <p>
+                  Sua inscrição será confirmada automaticamente após o pagamento.
+                  Você receberá um e-mail de confirmação. O QR Code expira em 24
+                  horas.
+                </p>
+              </div>
+            </div>
+          </div>
         ) : isSuccess ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
             <FaCheckCircle className="text-6xl text-green-500 mx-auto mb-4" />
@@ -406,6 +576,12 @@ export const InscricaoClient = ({
             <p className="text-gray-600 mb-4">
               Sua inscrição foi enviada com sucesso e está aguardando análise.
             </p>
+            {errors.paymentError && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg text-sm mb-4 text-left">
+                <p className="font-semibold mb-1">Atenção sobre o pagamento:</p>
+                <p>{errors.paymentError}</p>
+              </div>
+            )}
             <p className="text-sm text-gray-500">
               Você receberá uma confirmação em breve.
             </p>
@@ -419,6 +595,26 @@ export const InscricaoClient = ({
               dataFim={formatDate(championshipData.registrationEnd)}
               status={getRegistrationStatus()}
             />
+
+            {championshipData.registrationFee &&
+              championshipData.registrationFee > 0 && (
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mt-6 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-blue-700 font-medium">
+                      Taxa de Inscrição
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      Pagamento via Pix necessário para confirmação
+                    </p>
+                  </div>
+                  <span className="text-xl font-bold text-blue-900">
+                    {new Intl.NumberFormat("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    }).format(championshipData.registrationFee)}
+                  </span>
+                </div>
+              )}
 
             {/* Formulário de Inscrição */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mt-6">
@@ -547,6 +743,32 @@ export const InscricaoClient = ({
                   )}
                   <p className="mt-1 text-xs text-gray-500">
                     Necessário para processamento de pagamento
+                  </p>
+                </div>
+
+                {/* E-mail do Responsável */}
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    E-mail do Responsável <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900 ${
+                      errors.email ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="exemplo@email.com"
+                  />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Enviaremos a confirmação do pagamento para este e-mail
                   </p>
                 </div>
 

@@ -4,9 +4,10 @@ import {
   isRegistrationOpen,
   updateChampionshipStatuses,
 } from "@/lib/championship-status";
+import { createAsaasCustomer, createPixCharge, getPixQrCode } from "@/lib/asaas";
 import { validateCPF } from "@/lib/masks";
 import { prisma } from "@/lib/prisma";
-import { uploadImage } from "@/lib/storage";
+import { uploadImage, deleteImage } from "@/lib/storage";
 import { revalidatePath } from "next/cache";
 
 export interface PlayerData {
@@ -21,6 +22,11 @@ export interface CreateTeamResult {
   data?: {
     id: string;
     name: string;
+    paymentData?: {
+      pixQrCode: string;
+      pixQrCodeUrl: string;
+      value: number;
+    };
   };
 }
 
@@ -96,11 +102,19 @@ export async function createTeam(
     const category = formData.get("category") as string;
     const responsibleName = formData.get("responsibleName") as string;
     const responsibleCpf = formData.get("responsibleCpf") as string;
+    const email = formData.get("email") as string;
     const phone = formData.get("phone") as string;
     const shieldFile = formData.get("shield") as File | null;
 
     // Validação
-    if (!name || !category || !responsibleName || !responsibleCpf || !phone) {
+    if (
+      !name ||
+      !category ||
+      !responsibleName ||
+      !responsibleCpf ||
+      !email ||
+      !phone
+    ) {
       return {
         success: false,
         error: "Todos os campos obrigatórios devem ser preenchidos",
@@ -148,11 +162,92 @@ export async function createTeam(
         category: category.trim(),
         responsibleName: responsibleName.trim(),
         responsibleCpf: cleanCPF,
+        email: email.trim(),
         phone: phone.replace(/\D/g, ""), // Remove máscara do telefone
         shieldUrl,
         status: "PENDING",
       },
     });
+
+    // Processar pagamento se houver taxa
+    // @ts-ignore - registrationFee pode não existir se a migration não rodou
+    const registrationFee = updatedChampionship.registrationFee
+      ? // @ts-ignore
+        Number(updatedChampionship.registrationFee)
+      : 0;
+
+    if (registrationFee > 0) {
+      try {
+        // Criar cliente no Asaas
+        const customer = await createAsaasCustomer({
+          name: responsibleName.trim(),
+          cpfCnpj: cleanCPF,
+          email: email.trim(),
+          phone: phone.replace(/\D/g, ""),
+        });
+
+        // Data de vencimento (24h a partir de agora)
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 1);
+
+        // Criar cobrança Pix
+        const charge = await createPixCharge({
+          customer: customer.id,
+          value: registrationFee,
+          dueDate: dueDate.toISOString().split("T")[0],
+          description: `Inscrição Time ${name} - ${updatedChampionship.name}`,
+          externalReference: team.id,
+        });
+
+        // Gerar QR Code Pix
+        const qrCodeData = await getPixQrCode(charge.id);
+
+        // Salvar dados do pagamento
+        // @ts-ignore - Payment pode não existir se a migration não rodou
+        await prisma.payment.create({
+          data: {
+            teamId: team.id,
+            asaasPaymentId: charge.id,
+            amount: registrationFee,
+            status: "PENDING",
+            pixQrCode: qrCodeData.payload,
+            pixQrCodeUrl: qrCodeData.encodedImage, // Base64 da imagem
+            invoiceUrl: charge.invoiceUrl,
+          },
+        });
+
+        revalidatePath(`/campeonatos/${championship.slug}`);
+
+        return {
+          success: true,
+          data: {
+            id: team.id,
+            name: team.name,
+            paymentData: {
+              pixQrCode: qrCodeData.payload,
+              pixQrCodeUrl: `data:image/png;base64,${qrCodeData.encodedImage}`,
+              value: registrationFee,
+            },
+          },
+        };
+      } catch (paymentError) {
+        console.error("Erro ao processar pagamento:", paymentError);
+        // Em caso de erro no pagamento, mas time criado com sucesso:
+        // Idealmente, deveríamos permitir tentar pagar novamente depois.
+        // Por enquanto, retornamos erro mas o time fica como PENDING.
+        const errorMessage = paymentError instanceof Error
+          ? paymentError.message
+          : "Erro desconhecido";
+        return {
+          success: true, // Time criado
+          error: `Time cadastrado, mas erro ao gerar pagamento: ${errorMessage}. Entre em contato com a organização.`,
+          data: {
+            id: team.id,
+            name: team.name,
+          },
+        };
+      }
+    }
 
     revalidatePath(`/campeonatos/${championship.slug}`);
 
@@ -167,7 +262,9 @@ export async function createTeam(
     console.error("Erro ao criar time:", error);
     return {
       success: false,
-      error: "Erro ao criar time. Tente novamente.",
+      error: `Erro ao criar time: ${
+        error instanceof Error ? error.message : "Erro desconhecido"
+      }`,
     };
   }
 }
@@ -175,6 +272,163 @@ export async function createTeam(
 export interface UpdateTeamStatusResult {
   success: boolean;
   error?: string;
+}
+
+export interface DeleteTeamResult {
+  success: boolean;
+  error?: string;
+  data?: {
+    deletedPhotos: number;
+    deletedPlayers: number;
+  };
+}
+
+export async function deleteTeam(teamId: string): Promise<DeleteTeamResult> {
+  try {
+    // Fetch team with all related data
+    const team = await prisma.team.findUnique({
+      where: { id: teamId },
+      include: {
+        players: {
+          select: {
+            id: true,
+            photoUrl: true,
+          },
+        },
+        championship: {
+          select: {
+            id: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    if (!team) {
+      return {
+        success: false,
+        error: "Time não encontrado",
+      };
+    }
+
+    let deletedPhotos = 0;
+
+    // Delete all player photos from storage
+    for (const player of team.players) {
+      if (player.photoUrl) {
+        try {
+          await deleteImage(player.photoUrl);
+          deletedPhotos++;
+        } catch (error) {
+          console.error(
+            `Erro ao deletar foto do jogador ${player.id}:`,
+            error
+          );
+          // Continue with deletion even if photo fails
+        }
+      }
+    }
+
+    // Delete team shield from storage
+    if (team.shieldUrl) {
+      try {
+        await deleteImage(team.shieldUrl);
+        deletedPhotos++;
+      } catch (error) {
+        console.error(`Erro ao deletar escudo do time ${teamId}:`, error);
+        // Continue with deletion even if photo fails
+      }
+    }
+
+    // Delete team from database (cascade will delete players and payment)
+    await prisma.team.delete({
+      where: { id: teamId },
+    });
+
+    revalidatePath(`/campeonatos/${team.championship.slug}`);
+    revalidatePath("/admin");
+
+    return {
+      success: true,
+      data: {
+        deletedPhotos,
+        deletedPlayers: team.players.length,
+      },
+    };
+  } catch (error: unknown) {
+    console.error("Erro ao deletar time:", error);
+    return {
+      success: false,
+      error: `Erro ao deletar time: ${
+        error instanceof Error ? error.message : "Erro desconhecido"
+      }`,
+    };
+  }
+}
+
+export interface DeletePlayerResult {
+  success: boolean;
+  error?: string;
+}
+
+export async function deletePlayer(
+  playerId: string
+): Promise<DeletePlayerResult> {
+  try {
+    // Fetch player with photo URL and team info
+    const player = await prisma.player.findUnique({
+      where: { id: playerId },
+      include: {
+        team: {
+          select: {
+            championshipId: true,
+            championship: {
+              select: {
+                slug: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!player) {
+      return {
+        success: false,
+        error: "Jogador não encontrado",
+      };
+    }
+
+    // Delete player photo from storage if exists
+    if (player.photoUrl) {
+      try {
+        await deleteImage(player.photoUrl);
+      } catch (error) {
+        console.error(`Erro ao deletar foto do jogador ${playerId}:`, error);
+        // Continue with deletion even if photo fails
+      }
+    }
+
+    // Delete player from database
+    await prisma.player.delete({
+      where: { id: playerId },
+    });
+
+    revalidatePath(`/campeonatos/${player.team.championship.slug}`);
+    revalidatePath("/admin");
+
+    return {
+      success: true,
+    };
+  } catch (error: unknown) {
+    console.error("Erro ao deletar jogador:", error);
+    return {
+      success: false,
+      error: `Erro ao deletar jogador: ${
+        error instanceof Error ? error.message : "Erro desconhecido"
+      }`,
+    };
+  }
 }
 
 export async function updateTeamStatus(

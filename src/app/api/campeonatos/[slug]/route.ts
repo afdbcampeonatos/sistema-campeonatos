@@ -66,7 +66,12 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(championship);
+    return NextResponse.json({
+      ...championship,
+      registrationFee: championship.registrationFee
+        ? Number(championship.registrationFee)
+        : null,
+    });
   } catch (error) {
     console.error("Erro ao buscar campeonato:", error);
     const errorMessage =

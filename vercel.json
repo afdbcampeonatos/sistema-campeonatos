@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cleanup/abandoned-teams",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cleanup/orphaned-files",
+      "schedule": "0 3 1 * *"
+    }
+  ]
+}

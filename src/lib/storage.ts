@@ -68,8 +68,11 @@ export async function uploadImage(
  * Remove uma imagem do storage
  */
 export async function deleteImage(url: string): Promise<void> {
+  // Tentar usar a chave de serviço (admin) primeiro para garantir permissão de exclusão
+  // Se não estiver disponível (ex: no client-side), usar a chave anônima/pública
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 

@@ -39,6 +39,7 @@ export const authOptions = {
             id: user.id,
             email: user.email,
             name: user.name || user.email,
+            mustChangePassword: user.mustChangePassword,
           };
         } catch (error) {
           console.error("Erro no authorize:", error);
@@ -59,11 +60,12 @@ export const authOptions = {
       user,
     }: {
       token: JWT;
-      user?: { id: string; email: string; name?: string | null } | null;
+      user?: { id: string; email: string; name?: string | null; mustChangePassword: boolean } | null;
     }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
+        token.mustChangePassword = user.mustChangePassword;
       }
       return token;
     },
@@ -71,6 +73,7 @@ export const authOptions = {
       if (session.user && token.id && token.email) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
+        session.user.mustChangePassword = token.mustChangePassword;
       }
       return session;
     },

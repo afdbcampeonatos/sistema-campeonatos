@@ -1,5 +1,11 @@
 /**
  * Utilitário para gerenciar o status dos campeonatos baseado nas datas de inscrição
+ *
+ * Status possíveis:
+ * - DRAFT: Campeonato criado mas ainda não aberto
+ * - OPEN: Inscrições abertas
+ * - CLOSED: Inscrições encerradas (mas campeonato ainda em andamento)
+ * - FINISHED: Campeonato finalizado (fotos deletadas, dados mantidos para histórico)
  */
 
 import { prisma } from "./prisma";
@@ -14,6 +20,7 @@ export async function updateChampionshipStatuses(): Promise<void> {
     const now = new Date();
 
     // Buscar todos os campeonatos com status OPEN que têm data de fim definida
+    // Não incluir FINISHED - esse status é permanente
     const championshipsToClose = await prisma.championship.findMany({
       where: {
         status: "OPEN",

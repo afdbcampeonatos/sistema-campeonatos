@@ -2,6 +2,7 @@
 
 import { updateChampionshipStatuses } from "@/lib/championship-status";
 import { prisma } from "@/lib/prisma";
+import { deleteImage } from "@/lib/storage";
 import { generateSlug, generateUniqueSlug } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 
@@ -25,6 +26,7 @@ export async function createChampionship(
       | string
       | null;
     const registrationEnd = formData.get("registrationEnd") as string | null;
+    const registrationFeeRaw = formData.get("registrationFee") as string | null;
 
     // Validação
     if (!name || !category) {
@@ -34,9 +36,10 @@ export async function createChampionship(
       };
     }
 
-    // Validar datas
+    // Validar datas e taxa
     let registrationStartDate: Date | null = null;
     let registrationEndDate: Date | null = null;
+    let registrationFee: number | null = null;
 
     if (registrationStart) {
       registrationStartDate = new Date(registrationStart);
@@ -44,6 +47,22 @@ export async function createChampionship(
 
     if (registrationEnd) {
       registrationEndDate = new Date(registrationEnd);
+    }
+
+    // Validar taxa de inscrição
+    if (registrationFeeRaw) {
+      const cleanFee = registrationFeeRaw
+        .toString()
+        .replace("R$", "")
+        .replace(",", ".")
+        .trim();
+      registrationFee = parseFloat(cleanFee);
+      if (isNaN(registrationFee) || registrationFee < 0) {
+        return {
+          success: false,
+          error: "Taxa de inscrição inválida",
+        };
+      }
     }
 
     // Validar se data de fim é posterior à data de início
@@ -104,6 +123,7 @@ export async function createChampionship(
         status: "OPEN",
         registrationStart: registrationStartDate,
         registrationEnd: registrationEndDate,
+        registrationFee: registrationFee,
       },
     });
 
@@ -165,6 +185,7 @@ export async function updateChampionship(
       | string
       | null;
     const registrationEnd = formData.get("registrationEnd") as string | null;
+    const registrationFeeRaw = formData.get("registrationFee") as string | null;
 
     // Validação
     if (!name || !category || !status) {
@@ -174,9 +195,10 @@ export async function updateChampionship(
       };
     }
 
-    // Validar datas
+    // Validar datas e taxa
     let registrationStartDate: Date | null = null;
     let registrationEndDate: Date | null = null;
+    let registrationFee: number | null = null;
 
     if (registrationStart) {
       registrationStartDate = new Date(registrationStart);
@@ -184,6 +206,22 @@ export async function updateChampionship(
 
     if (registrationEnd) {
       registrationEndDate = new Date(registrationEnd);
+    }
+
+    // Validar taxa de inscrição
+    if (registrationFeeRaw) {
+      const cleanFee = registrationFeeRaw
+        .toString()
+        .replace("R$", "")
+        .replace(",", ".")
+        .trim();
+      registrationFee = parseFloat(cleanFee);
+      if (isNaN(registrationFee) || registrationFee < 0) {
+        return {
+          success: false,
+          error: "Taxa de inscrição inválida",
+        };
+      }
     }
 
     // Validar se data de fim é posterior à data de início
@@ -274,6 +312,7 @@ export async function updateChampionship(
         status: finalStatus,
         registrationStart: registrationStartDate,
         registrationEnd: registrationEndDate,
+        registrationFee: registrationFee,
       },
     });
 
@@ -318,19 +357,29 @@ export async function updateChampionship(
 export interface DeleteChampionshipResult {
   success: boolean;
   error?: string;
+  data?: {
+    deletedPhotos: number;
+    deletedTeams: number;
+    deletedPlayers: number;
+  };
 }
 
 export async function deleteChampionship(
   id: string
 ): Promise<DeleteChampionshipResult> {
   try {
-    // Verificar se o campeonato existe
+    // Fetch championship with all teams and players (including photo URLs)
     const championship = await prisma.championship.findUnique({
       where: { id },
       include: {
         teams: {
-          select: {
-            id: true,
+          include: {
+            players: {
+              select: {
+                id: true,
+                photoUrl: true,
+              },
+            },
           },
         },
       },
@@ -343,31 +392,174 @@ export async function deleteChampionship(
       };
     }
 
-    // Verificar se há times inscritos
-    if (championship.teams.length > 0) {
-      return {
-        success: false,
-        error: `Não é possível excluir o campeonato. Existem ${championship.teams.length} time(s) inscrito(s).`,
-      };
+    let deletedPhotos = 0;
+    let deletedPlayers = 0;
+
+    // Delete all photos from storage before deleting from database
+    for (const team of championship.teams) {
+      // Delete player photos
+      for (const player of team.players) {
+        if (player.photoUrl) {
+          try {
+            await deleteImage(player.photoUrl);
+            deletedPhotos++;
+          } catch (error) {
+            console.error(
+              `Erro ao deletar foto do jogador ${player.id}:`,
+              error
+            );
+            // Continue even if photo deletion fails
+          }
+        }
+        deletedPlayers++;
+      }
+
+      // Delete team shield
+      if (team.shieldUrl) {
+        try {
+          await deleteImage(team.shieldUrl);
+          deletedPhotos++;
+        } catch (error) {
+          console.error(`Erro ao deletar escudo do time ${team.id}:`, error);
+          // Continue even if photo deletion fails
+        }
+      }
     }
 
-    // Deletar campeonato
+    // Delete championship (cascade will delete teams, players, matches, payments)
     await prisma.championship.delete({
       where: { id },
     });
 
-    // Revalidar o cache
+    // Revalidate cache
     revalidatePath("/admin");
     revalidatePath("/campeonatos");
 
     return {
       success: true,
+      data: {
+        deletedPhotos,
+        deletedTeams: championship.teams.length,
+        deletedPlayers,
+      },
     };
   } catch (error: unknown) {
     console.error("Erro ao deletar campeonato:", error);
     return {
       success: false,
       error: "Erro ao deletar campeonato. Tente novamente.",
+    };
+  }
+}
+
+export interface FinishChampionshipResult {
+  success: boolean;
+  error?: string;
+  data?: {
+    deletedPhotos: number;
+  };
+}
+
+export async function finishChampionship(
+  id: string
+): Promise<FinishChampionshipResult> {
+  try {
+    // Fetch championship with all teams and players (including photo URLs)
+    const championship = await prisma.championship.findUnique({
+      where: { id },
+      include: {
+        teams: {
+          include: {
+            players: {
+              select: {
+                id: true,
+                photoUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!championship) {
+      return {
+        success: false,
+        error: "Campeonato não encontrado",
+      };
+    }
+
+    // Check if already finished
+    if (championship.status === "FINISHED") {
+      return {
+        success: false,
+        error: "Este campeonato já foi finalizado",
+      };
+    }
+
+    let deletedPhotos = 0;
+
+    // Delete all photos from storage (but keep database records for history)
+    for (const team of championship.teams) {
+      // Delete player photos
+      for (const player of team.players) {
+        if (player.photoUrl) {
+          try {
+            await deleteImage(player.photoUrl);
+            deletedPhotos++;
+            // Clear the photo URL in database
+            await prisma.player.update({
+              where: { id: player.id },
+              data: { photoUrl: null },
+            });
+          } catch (error) {
+            console.error(
+              `Erro ao deletar foto do jogador ${player.id}:`,
+              error
+            );
+            // Continue even if photo deletion fails
+          }
+        }
+      }
+
+      // Delete team shield
+      if (team.shieldUrl) {
+        try {
+          await deleteImage(team.shieldUrl);
+          deletedPhotos++;
+          // Clear the shield URL in database
+          await prisma.team.update({
+            where: { id: team.id },
+            data: { shieldUrl: null },
+          });
+        } catch (error) {
+          console.error(`Erro ao deletar escudo do time ${team.id}:`, error);
+          // Continue even if photo deletion fails
+        }
+      }
+    }
+
+    // Update championship status to FINISHED
+    await prisma.championship.update({
+      where: { id },
+      data: { status: "FINISHED" },
+    });
+
+    // Revalidate cache
+    revalidatePath("/admin");
+    revalidatePath("/campeonatos");
+    revalidatePath(`/campeonatos/${championship.slug}`);
+
+    return {
+      success: true,
+      data: {
+        deletedPhotos,
+      },
+    };
+  } catch (error: unknown) {
+    console.error("Erro ao finalizar campeonato:", error);
+    return {
+      success: false,
+      error: "Erro ao finalizar campeonato. Tente novamente.",
     };
   }
 }

@@ -35,6 +35,7 @@ export const CreateChampionshipModal = ({
   const [generatedSlug, setGeneratedSlug] = useState("");
   const [registrationStart, setRegistrationStart] = useState<Date | null>(null);
   const [registrationEnd, setRegistrationEnd] = useState<Date | null>(null);
+  const [registrationFee, setRegistrationFee] = useState("");
 
   // Fechar modal com ESC
   useEffect(() => {
@@ -86,6 +87,7 @@ export const CreateChampionshipModal = ({
         // Resetar estados de data
         setRegistrationStart(null);
         setRegistrationEnd(null);
+        setRegistrationFee("");
         // Manter loading por mais um momento para mostrar feedback visual
         await new Promise((resolve) => setTimeout(resolve, 800));
         // Fechar modal e mostrar toast
@@ -113,6 +115,7 @@ export const CreateChampionshipModal = ({
       setName("");
       setSelectedCategory("");
       setGeneratedSlug("");
+      setRegistrationFee("");
       // Resetar formulário ao fechar
       setFormKey((prev) => prev + 1);
       onClose();
@@ -129,6 +132,12 @@ export const CreateChampionshipModal = ({
     const newCategory = e.target.value;
     setSelectedCategory(newCategory);
     updateSlug(name, newCategory);
+  };
+
+  const handleFeeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Permite apenas números e vírgula/ponto
+    const value = e.target.value.replace(/[^0-9.,]/g, "");
+    setRegistrationFee(value);
   };
 
   const updateSlug = (championshipName: string, category: string) => {
@@ -298,6 +307,34 @@ export const CreateChampionshipModal = ({
             />
             <p className="mt-1 text-xs text-gray-500">
               Opcional: Defina quando as inscrições terminam
+            </p>
+          </div>
+
+          {/* Taxa de Inscrição */}
+          <div>
+            <label
+              htmlFor="registrationFee"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Taxa de Inscrição (R$)
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+                R$
+              </span>
+              <input
+                type="text"
+                id="registrationFee"
+                name="registrationFee"
+                value={registrationFee}
+                onChange={handleFeeChange}
+                disabled={isSubmitting}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                placeholder="0,00"
+              />
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Opcional: Deixe em branco para inscrições gratuitas
             </p>
           </div>
 

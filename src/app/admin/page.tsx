@@ -158,6 +158,17 @@ export default async function AdminPage() {
       orderBy: {
         createdAt: "desc",
       },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        category: true,
+        status: true,
+        registrationStart: true,
+        registrationEnd: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     campeonatosCategories = await prisma.category.findMany({

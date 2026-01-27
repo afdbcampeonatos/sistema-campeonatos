@@ -38,6 +38,9 @@ export default async function InscricaoPage({ params }: PageProps) {
     status: championship.status,
     registrationStart: championship.registrationStart?.toISOString() || null,
     registrationEnd: championship.registrationEnd?.toISOString() || null,
+    registrationFee: championship.registrationFee
+      ? Number(championship.registrationFee)
+      : 0,
   };
 
   return <InscricaoClient initialChampionshipData={championshipData} />;

@@ -140,12 +140,6 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
-
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-xs text-center text-gray-500">
-                Credenciais padrão: afdb@teste.com / 123456
-              </p>
-            </div>
           </div>
         </div>
       </main>

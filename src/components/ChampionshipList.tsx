@@ -1,10 +1,10 @@
 "use client";
 
-import { deleteChampionship } from "@/app/actions/championships";
+import { deleteChampionship, finishChampionship } from "@/app/actions/championships";
 import { useToast } from "@/contexts/ToastContext";
 import Link from "next/link";
 import { useState } from "react";
-import { FaEdit, FaExternalLinkAlt, FaTrash, FaTrophy } from "react-icons/fa";
+import { FaCheck, FaEdit, FaExternalLinkAlt, FaTrash, FaTrophy } from "react-icons/fa";
 import { EditChampionshipModal } from "./EditChampionshipModal";
 
 interface Championship {
@@ -36,12 +36,14 @@ const statusColors: Record<string, string> = {
   OPEN: "bg-green-100 text-green-800",
   CLOSED: "bg-gray-100 text-gray-800",
   DRAFT: "bg-blue-100 text-blue-800",
+  FINISHED: "bg-purple-100 text-purple-800",
 };
 
 const statusLabels: Record<string, string> = {
   OPEN: "Aberto",
   CLOSED: "Encerrado",
   DRAFT: "Rascunho",
+  FINISHED: "Finalizado",
 };
 
 export const ChampionshipList = ({
@@ -56,6 +58,7 @@ export const ChampionshipList = ({
     null
   );
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString("pt-BR", {
@@ -68,7 +71,7 @@ export const ChampionshipList = ({
   const handleDelete = async (id: string) => {
     if (
       !confirm(
-        "Tem certeza que deseja excluir este campeonato? Esta ação não pode ser desfeita."
+        "Tem certeza que deseja excluir este campeonato? Todos os times, jogadores e fotos serão removidos permanentemente. Esta ação não pode ser desfeita."
       )
     ) {
       return;
@@ -79,10 +82,36 @@ export const ChampionshipList = ({
     setIsDeleting(false);
 
     if (result.success) {
-      toast.success("Campeonato excluído com sucesso!");
+      const stats = result.data;
+      toast.success(
+        `Campeonato excluído! ${stats?.deletedTeams || 0} time(s) e ${stats?.deletedPhotos || 0} foto(s) removidos.`
+      );
       window.location.reload();
     } else {
       toast.error(result.error || "Erro ao excluir campeonato");
+    }
+  };
+
+  const handleFinish = async (id: string, name: string) => {
+    if (
+      !confirm(
+        `Tem certeza que deseja finalizar o campeonato "${name}"? Todas as fotos de times e jogadores serão deletadas para liberar espaço. Os dados do campeonato serão mantidos para histórico.`
+      )
+    ) {
+      return;
+    }
+
+    setIsFinishing(true);
+    const result = await finishChampionship(id);
+    setIsFinishing(false);
+
+    if (result.success) {
+      toast.success(
+        `Campeonato finalizado! ${result.data?.deletedPhotos || 0} foto(s) removidas.`
+      );
+      window.location.reload();
+    } else {
+      toast.error(result.error || "Erro ao finalizar campeonato");
     }
   };
 
@@ -147,6 +176,16 @@ export const ChampionshipList = ({
                   >
                     <FaEdit className="text-lg" />
                   </button>
+                  {championship.status !== "FINISHED" && (
+                    <button
+                      onClick={() => handleFinish(championship.id, championship.name)}
+                      disabled={isFinishing}
+                      className="text-purple-600 hover:text-purple-900 transition-colors disabled:opacity-50 p-2"
+                      title="Finalizar campeonato"
+                    >
+                      <FaCheck className="text-lg" />
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDelete(championship.id)}
                     disabled={isDeleting}
@@ -285,6 +324,16 @@ export const ChampionshipList = ({
                       >
                         <FaEdit />
                       </button>
+                      {championship.status !== "FINISHED" && (
+                        <button
+                          onClick={() => handleFinish(championship.id, championship.name)}
+                          disabled={isFinishing}
+                          className="text-purple-600 hover:text-purple-900 transition-colors disabled:opacity-50"
+                          title="Finalizar campeonato"
+                        >
+                          <FaCheck />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleDelete(championship.id)}
                         disabled={isDeleting}
