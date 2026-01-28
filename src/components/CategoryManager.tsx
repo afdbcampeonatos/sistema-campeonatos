@@ -308,6 +308,17 @@ export const CategoryManager = ({ initialCategories }: CategoryManagerProps) => 
               </button>
             </div>
 
+            {!editingCategory && (
+              <div className="px-6 pt-4">
+                <div className="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm border border-blue-200">
+                  <p>
+                    <strong>Atenção:</strong> Categorias são grupos de idade/nível (ex: Sub-11, Profissional).
+                    Para criar um novo campeonato (ex: Copa 2024), vá para a tela de <a href="/admin" className="underline font-semibold hover:text-blue-900">Campeonatos</a>.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">

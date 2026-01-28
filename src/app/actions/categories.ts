@@ -47,7 +47,7 @@ export async function createCategory(
     if (existingCategory) {
       return {
         success: false,
-        error: 'Já existe uma categoria com este nome. Por favor, escolha outro.',
+        error: `Já existe uma categoria cadastrada com o nome "${name.trim()}". Verifique se ela não está inativa.`,
       };
     }
 
@@ -120,7 +120,7 @@ export async function updateCategory(
     if (existingCategory) {
       return {
         success: false,
-        error: 'Já existe uma categoria com este nome. Por favor, escolha outro.',
+        error: `Já existe uma categoria cadastrada com o nome "${name.trim()}". Verifique se ela não está inativa.`,
       };
     }
 
