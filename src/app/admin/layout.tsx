@@ -1,6 +1,5 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { ChangePasswordModal } from "@/components/ChangePasswordModal";
 
 export default async function AdminLayout({
   children,
@@ -15,7 +14,6 @@ export default async function AdminLayout({
 
   return (
     <>
-      {session.user.mustChangePassword && <ChangePasswordModal />}
       {children}
     </>
   );
