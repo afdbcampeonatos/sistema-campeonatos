@@ -37,6 +37,20 @@ export async function createCategory(
       };
     }
 
+    // Verificar se já existe uma categoria com este nome
+    const existingCategory = await prisma.category.findUnique({
+      where: {
+        name: name.trim(),
+      },
+    });
+
+    if (existingCategory) {
+      return {
+        success: false,
+        error: 'Já existe uma categoria com este nome. Por favor, escolha outro.',
+      };
+    }
+
     const category = await prisma.category.create({
       data: {
         name: name.trim(),
@@ -90,6 +104,23 @@ export async function updateCategory(
       return {
         success: false,
         error: 'Nome é obrigatório',
+      };
+    }
+
+    // Verificar se já existe outra categoria com este nome
+    const existingCategory = await prisma.category.findFirst({
+      where: {
+        name: name.trim(),
+        id: {
+          not: id,
+        },
+      },
+    });
+
+    if (existingCategory) {
+      return {
+        success: false,
+        error: 'Já existe uma categoria com este nome. Por favor, escolha outro.',
       };
     }
 
